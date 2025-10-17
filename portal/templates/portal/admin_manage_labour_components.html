@@ -1,0 +1,130 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Manage Labour & Components | SMG Portal</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-white">
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="text-primary">Manage Labour & Components</h3>
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary btn-sm">Back to Admin Dashboard</a>
+    </div>
+
+    {% if messages %}
+        {% for m in messages %}
+            <div class="alert {% if m.tags %}alert-{{ m.tags }}{% else %}alert-info{% endif %}">{{ m }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_all">
+        <div class="row">
+            <div class="col-md-6">
+                <h5 class="mt-2">Labour Services</h5>
+                <table class="table table-bordered">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>Job Code</th>
+                            <th>Description</th>
+                            <th>Cost (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in labour_services %}
+                        <tr>
+                            <td>
+                                <input class="form-control form-control-sm" name="labour_code_{{ s.id }}" value="{{ s.job_code }}">
+                            </td>
+                            <td>
+                                <input class="form-control form-control-sm" name="labour_desc_{{ s.id }}" value="{{ s.description }}">
+                            </td>
+                            <td style="width:120px;">
+                                <input class="form-control form-control-sm" name="labour_cost_{{ s.id }}" value="{{ s.cost }}">
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center">No labour services.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <div class="card p-2 mb-3">
+                    <h6>Add New Labour</h6>
+                    <div class="row g-2">
+                        <div class="col-4"><input name="new_labour_code" class="form-control form-control-sm" placeholder="Job Code (e.g. J101)"></div>
+                        <div class="col-5"><input name="new_labour_desc" class="form-control form-control-sm" placeholder="Description"></div>
+                        <div class="col-2"><input name="new_labour_cost" class="form-control form-control-sm" placeholder="Cost"></div>
+                        <div class="col-1"><button name="action" value="add_labour" class="btn btn-success btn-sm">Add</button></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="col-md-6">
+                <h5 class="mt-2">Components</h5>
+                <table class="table table-bordered">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>Part Code</th>
+                            <th>Part Name</th>
+                            <th>Model</th>
+                            <th>Price (₹)</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in components %}
+                        <tr>
+                            <td><input class="form-control form-control-sm" name="comp_code_{{ c.id }}" value="{{ c.part_code }}"></td>
+                            <td><input class="form-control form-control-sm" name="comp_name_{{ c.id }}" value="{{ c.part_name }}"></td>
+                            <td>
+                                <select name="comp_model_{{ c.id }}" class="form-select form-select-sm">
+                                    <option value="">-</option>
+                                    {% for m in models %}
+                                        <option value="{{ m.id }}" {% if c.model and c.model.id == m.id %}selected{% endif %}>{{ m.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td style="width:120px;"><input class="form-control form-control-sm" name="comp_price_{{ c.id }}" value="{{ c.price }}"></td>
+                            <td style="width:80px;"><button name="action" value="delete_comp_{{ c.id }}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete this component?')">Delete</button></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center">No components.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <div class="card p-2">
+                    <h6>Add New Component</h6>
+                    <div class="row g-2">
+                        <div class="col-3"><input name="new_comp_code" class="form-control form-control-sm" placeholder="Part Code (e.g. P001)"></div>
+                        <div class="col-4"><input name="new_comp_name" class="form-control form-control-sm" placeholder="Part Name"></div>
+                        <div class="col-3">
+                            <select name="new_comp_model" class="form-select form-select-sm">
+                                <option value="">Assign Model (optional)</option>
+                                {% for m in models %}
+                                    <option value="{{ m.id }}">{{ m.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-2"><input name="new_comp_price" class="form-control form-control-sm" placeholder="Price"></div>
+                    </div>
+                    <div class="mt-2">
+                        <button name="action" value="add_component" class="btn btn-success btn-sm">Add Component</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="text-center mt-3">
+            <button type="submit" class="btn btn-primary">Save All Changes</button>
+        </div>
+    </form>
+</div>
+</body>
+</html>

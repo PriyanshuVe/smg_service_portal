@@ -1,0 +1,76 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard | SMG Portal</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+<div class="container mt-4">
+    <h3 class="mb-3">Admin Dashboard</h3>
+    <a href="{% url 'admin_manage_labour_components' %}" class="btn btn-outline-primary btn-sm">Manage Labour & Components</a>
+
+    {% if message %}
+      <div class="alert alert-success">{{ message }}</div>
+    {% endif %}
+
+    <div class="card p-3 shadow">
+    <h5 class="text-primary">Add New Dealer</h5>
+    <form method="post">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-md-4 mb-2">
+                <input type="text" name="name" class="form-control" placeholder="Dealer Name" required>
+            </div>
+            <div class="col-md-4 mb-2">
+                <input type="email" name="email" class="form-control" placeholder="Email ID" required>
+            </div>
+            <div class="col-md-4 mb-2">
+                <input type="text" name="contact" class="form-control" placeholder="Contact No" required>
+            </div>
+            <div class="col-md-4 mb-2">
+                <input type="text" name="location" class="form-control" placeholder="Location" required>
+            </div>
+            <div class="col-md-4 mb-2">
+                <input type="text" name="city" class="form-control" placeholder="City" required>
+            </div>
+            <div class="col-md-4 mb-2">
+                <input type="text" name="state" class="form-control" placeholder="State" required>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary mt-2">Add Dealer</button>
+    </form>
+</div>
+
+
+    <hr>
+
+    <h5>Dealer List</h5>
+    <table class="table table-bordered table-striped mt-2">
+        <thead>
+            <tr>
+                <th>Dealer ID</th>
+                <th>Name</th>
+                <th>Location</th>
+                <th>Phone</th>
+                <th>Password</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in dealers %}
+            <tr>
+                <td>{{ d.dealer_id }}</td>
+                <td>{{ d.name }}</td>
+                <td>{{ d.location }}</td>
+                <td>{{ d.phone }}</td>
+                <td>{{ d.password }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted">No dealers added yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
