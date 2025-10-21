@@ -366,23 +366,77 @@ def admin_manage_rates(request):
 
     
 def bill_view(request, record_id):
-    record = ServiceRecord.objects.get(id=record_id)
+    record = get_object_or_404(ServiceRecord, id=record_id)
+
+    # ✅ Prepare service and component data
     services = record.services.all()
-    return render(request, 'portal/bill.html', {
-        'record': record,
-        'services': services
-    })
+
+    components_data = []
+    for component in record.components.all():
+        components_data.append({
+            "name": component.part_name,
+            "code": component.part_code,
+            "price": component.price,
+        })
+
+    context = {
+        "record": record,
+        "services": services,
+        "components": components_data,
+        "total_cost": record.total_cost,
+    }
+
+    return render(request, 'portal/bill.html', context)
 
 from django.http import HttpResponse
 from django.template.loader import get_template
 from xhtml2pdf import pisa
 
 def download_bill_pdf(request, record_id):
-    record = ServiceRecord.objects.get(id=record_id)
+    record = get_object_or_404(ServiceRecord, id=record_id)
+
     services = record.services.all()
+
+    components_data = []
+    for component in record.components.all():
+        components_data.append({
+            "name": component.part_name,
+            "code": component.part_code,
+            "price": component.price,
+        })
+
+    context = {
+        "record": record,
+        "services": services,
+        "components": components_data,
+        "total_cost": record.total_cost,
+    }
+
+    # ✅ Render bill as HTML → convert to PDF
     template = get_template('portal/bill.html')
-    html = template.render({'record': record, 'services': services})
+    html = template.render(context)
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="Bill_{record.id}.pdf"'
     pisa.CreatePDF(html, dest=response)
     return response
+
+
+def edit_dealer(request, dealer_id):
+    dealer = get_object_or_404(Dealer, id=dealer_id)
+    if request.method == "POST":
+        dealer.name = request.POST.get("name")
+        dealer.email = request.POST.get("email")
+        dealer.contact = request.POST.get("contact")
+        dealer.city = request.POST.get("city")
+        dealer.state = request.POST.get("state")
+        dealer.save()
+        messages.success(request, "Dealer updated successfully!")
+        return redirect("admin_dashboard")
+    return render(request, "portal/edit_dealer.html", {"dealer": dealer})
+
+
+def delete_dealer(request, dealer_id):
+    dealer = get_object_or_404(Dealer, id=dealer_id)
+    dealer.delete()
+    messages.success(request, "Dealer deleted successfully!")
+    return redirect("admin_dashboard")
