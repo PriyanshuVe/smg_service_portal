@@ -168,9 +168,7 @@ def admin_manage_labour_components(request):
 def index(request):
     return render(request, 'portal/index.html')
 
-from django.views.decorators.csrf import csrf_exempt
 
-@csrf_exempt
 # ✅ Admin Login View
 def admin_login(request):
     if request.method == "POST":
