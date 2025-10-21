@@ -422,11 +422,12 @@ def download_bill_pdf(request, record_id):
 
 
 def edit_dealer(request, dealer_id):
-    dealer = get_object_or_404(Dealer, id=dealer_id)
+    dealer = get_object_or_404(Dealer, dealer_id=dealer_id)  # ✅ use dealer_id
     if request.method == "POST":
         dealer.name = request.POST.get("name")
         dealer.email = request.POST.get("email")
         dealer.contact = request.POST.get("contact")
+        dealer.location = request.POST.get("location")
         dealer.city = request.POST.get("city")
         dealer.state = request.POST.get("state")
         dealer.save()
@@ -436,7 +437,7 @@ def edit_dealer(request, dealer_id):
 
 
 def delete_dealer(request, dealer_id):
-    dealer = get_object_or_404(Dealer, id=dealer_id)
+    dealer = get_object_or_404(Dealer, dealer_id=dealer_id)  # ✅ use dealer_id
     dealer.delete()
     messages.success(request, "Dealer deleted successfully!")
     return redirect("admin_dashboard")
