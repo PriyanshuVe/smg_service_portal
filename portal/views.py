@@ -168,7 +168,6 @@ def admin_manage_labour_components(request):
 def index(request):
     return render(request, 'portal/index.html')
 
-
 # ✅ Admin Login View
 def admin_login(request):
     if request.method == "POST":
