@@ -254,7 +254,7 @@ def dealer_dashboard(request):
         kms = request.POST['service_kms']
 
         selected_services = request.POST.getlist('services')
-        selected_components = request.POST.getlist('components')
+        selected_components = request.POST.getlist('parts')  # ✅ Fix name match
 
         labour_total = 0
         component_total = 0
@@ -279,11 +279,11 @@ def dealer_dashboard(request):
         for cid in selected_components:
             component = Component.objects.get(id=cid)
             record.components.add(component)
-            component_total += component.price
+            component_total += float(component.price)
 
             # Reduce stock in inventory safely
             try:
-                inventory = Inventory.objects.get(component=component)
+                inventory = Inventory.objects.get(component=component, dealer=dealer)
                 inventory.reduce_stock(1)
             except Inventory.DoesNotExist:
                 print(f"No inventory record found for {component.part_name}")
@@ -422,7 +422,7 @@ def download_bill_pdf(request, record_id):
 
 
 def edit_dealer(request, dealer_id):
-    dealer = get_object_or_404(Dealer, id=dealer_id)  # Must match template URL param
+    dealer = get_object_or_404(Dealer, dealer_id=dealer_id)  # ✅ Fix here
     if request.method == "POST":
         dealer.name = request.POST.get("name")
         dealer.email = request.POST.get("email")
@@ -437,8 +437,9 @@ def edit_dealer(request, dealer_id):
 
 
 def delete_dealer(request, dealer_id):
-    dealer = get_object_or_404(Dealer, id=dealer_id)  # Must match template URL param
+    dealer = get_object_or_404(Dealer, dealer_id=dealer_id)  # ✅ Fix here
     dealer.delete()
     messages.success(request, "Dealer deleted successfully!")
     return redirect("admin_dashboard")
+
 
