@@ -282,13 +282,15 @@ def dealer_dashboard(request):
             component_total += float(component.price)
 
             # Reduce stock in inventory safely
+            # Reduce stock in inventory safely for this dealer
             try:
-                inventory = Inventory.objects.get(component=component, dealer=dealer)
+                inventory = Inventory.objects.get(dealer=dealer, component=component)
                 inventory.reduce_stock(1)
             except Inventory.DoesNotExist:
-                print(f"No inventory record found for {component.part_name}")
+                print(f"No inventory record found for {component.part_name} for dealer {dealer.name}")
             except ValueError as e:
                 print(e)
+
 
         # Save total cost
         record.total_cost = labour_total + component_total

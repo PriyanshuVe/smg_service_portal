@@ -8,7 +8,7 @@
 <script>
 function calculateTotal() {
     let labourBoxes = document.querySelectorAll('input[name="services"]:checked');
-    let partBoxes = document.querySelectorAll('input[name="parts"]:checked');
+    let partBoxes = document.querySelectorAll('input[name="components"]:checked');
     let total = 0;
     labourBoxes.forEach(cb => total += parseInt(cb.dataset.cost));
     partBoxes.forEach(cb => total += parseInt(cb.dataset.price));
