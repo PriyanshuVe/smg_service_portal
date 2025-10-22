@@ -256,8 +256,8 @@ def dealer_dashboard(request):
         selected_services = request.POST.getlist('services')
         selected_components = request.POST.getlist('parts')  # ✅ Fix name match
 
-        labour_total = 0
-        component_total = 0
+        labour_total = Decimal(0)
+        component_total = Decimal(0)
 
         # Create new service record
         record = ServiceRecord.objects.create(
@@ -273,13 +273,13 @@ def dealer_dashboard(request):
         for sid in selected_services:
             service = LabourService.objects.get(id=sid)
             record.services.add(service)
-            labour_total += service.cost
+            labour_total += Decimal(service.cost)
 
         # Add selected components and reduce inventory
         for cid in selected_components:
             component = Component.objects.get(id=cid)
             record.components.add(component)
-            component_total += float(component.price)
+            component_total += Decimal(component.price)
 
             # Reduce stock in inventory safely
             # Reduce stock in inventory safely for this dealer
