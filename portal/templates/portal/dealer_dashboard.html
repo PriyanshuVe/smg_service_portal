@@ -65,7 +65,7 @@ function calculateTotal() {
                 {% for p in components %}
                 <div class="col-md-6 mb-1">
                     <label>
-                        <input type="checkbox" name="parts" value="{{ p.id }}" data-price="{{ p.price }}" onchange="calculateTotal()">
+                        <input type="checkbox" name="components" value="{{ p.id }}" data-price="{{ p.price }}" onchange="calculateTotal()">
                         <strong>{{ p.part_code }}</strong> - {{ p.part_name }}
                         {% if p.model %}<small>(Model: {{ p.model.name }})</small>{% endif %}
                         <br>
