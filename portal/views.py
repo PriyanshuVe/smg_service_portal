@@ -203,23 +203,22 @@ def admin_dashboard(request):
         import random, string
         password = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
-        Dealer.objects.create(
-            dealer_id=dealer_id,
-            name=name,
-            email=email,
-            contact=contact,
-            location=location,
-            city=city,
-            state=state,
-            password=password
-        )
+        try:
+            Dealer.objects.create(
+                dealer_id=dealer_id,
+                name=name,
+                email=email,
+                contact=contact,
+                location=location,
+                city=city,
+                state=state,
+                password=password
+            )
+            messages.success(request, f"Dealer {name} added successfully!")
+        except IntegrityError:
+            messages.error(request, f"Email {email} already exists! Please use a different one.")
 
-        dealers = Dealer.objects.all()
-        return render(request, 'portal/admin_dashboard.html', {
-            'dealers': dealers,
-            'message': f"Dealer {name} added successfully!"
-        })
-
+    # Always show dealer list
     dealers = Dealer.objects.all()
     return render(request, 'portal/admin_dashboard.html', {'dealers': dealers})
 
@@ -237,6 +236,8 @@ def dealer_login(request):
 
     return render(request, 'portal/dealer_login.html')
 
+from decimal import Decimal, InvalidOperation
+
 def dealer_dashboard(request):
     dealer_id = request.session.get('dealer_id')
     if not dealer_id:
@@ -247,19 +248,19 @@ def dealer_dashboard(request):
     components_list = Component.objects.all()
 
     if request.method == "POST":
-        cname = request.POST['customer_name']
-        cphone = request.POST['customer_phone']
-        sale_date = request.POST['date_of_sale']
-        last_service = request.POST['last_service_date']
-        kms = request.POST['service_kms']
+        cname = request.POST.get('customer_name', '').strip()
+        cphone = request.POST.get('customer_phone', '').strip()
+        sale_date = request.POST.get('date_of_sale')
+        last_service = request.POST.get('last_service_date')
+        kms = request.POST.get('service_kms')
 
-        selected_services = request.POST.getlist('services')
-        selected_components = request.POST.getlist('parts')  # ✅ Fix name match
+        selected_services = request.POST.getlist('services')       # matches name in template
+        selected_components = request.POST.getlist('components')   # matches name in template
 
         labour_total = Decimal(0)
         component_total = Decimal(0)
 
-        # Create new service record
+        # create record
         record = ServiceRecord.objects.create(
             dealer=dealer,
             customer_name=cname,
@@ -269,38 +270,44 @@ def dealer_dashboard(request):
             service_kms=kms
         )
 
-        # Add selected services
+        # add selected services
         for sid in selected_services:
-            service = LabourService.objects.get(id=sid)
-            record.services.add(service)
-            labour_total += Decimal(service.cost)
-
-        # Add selected components and reduce inventory
-        for cid in selected_components:
-            component = Component.objects.get(id=cid)
-            record.components.add(component)
-            component_total += Decimal(component.price)
-
-            # Reduce stock in inventory safely
-            # Reduce stock in inventory safely for this dealer
             try:
-                inventory = Inventory.objects.get(dealer=dealer, component=component)
-                inventory.reduce_stock(1)
-            except Inventory.DoesNotExist:
-                print(f"No inventory record found for {component.part_name} for dealer {dealer.name}")
-            except ValueError as e:
-                print(e)
+                service = LabourService.objects.get(id=int(sid))
+                record.services.add(service)
+                labour_total += Decimal(service.cost)
+            except (LabourService.DoesNotExist, ValueError):
+                continue
 
+        # add selected components and reduce dealer inventory safely
+        for cid in selected_components:
+            try:
+                component = Component.objects.get(id=int(cid))
+                record.components.add(component)
+                # ensure Decimal from price (which may be Decimal already)
+                component_total += Decimal(str(component.price))
 
-        # Save total cost
+                # reduce stock for this dealer only
+                try:
+                    inventory = Inventory.objects.get(dealer=dealer, component=component)
+                    inventory.reduce_stock(1)
+                except Inventory.DoesNotExist:
+                    # no stock for this dealer — we don't crash, just log
+                    print(f"[WARN] No inventory record for {component.part_name} (dealer {dealer.dealer_id})")
+                except ValueError as e:
+                    print(f"[WARN] Inventory reduce error: {e}")
+
+            except (Component.DoesNotExist, ValueError):
+                continue
+
+        # save totals (DecimalField)
         record.total_cost = labour_total + component_total
         record.save()
 
         return redirect('bill_view', record_id=record.id)
 
-    # Show dashboard
+    # GET render
     history = ServiceRecord.objects.filter(dealer=dealer).order_by('-created_at')
-    
     dealer_inventory = Inventory.objects.filter(dealer=dealer)
 
     return render(request, 'portal/dealer_dashboard.html', {
@@ -310,6 +317,7 @@ def dealer_dashboard(request):
         'components': components_list,
         'inventory': dealer_inventory
     })
+
 
 def dealer_add_inventory(request):
     dealer_id = request.session.get('dealer_id')
@@ -369,26 +377,30 @@ def admin_manage_rates(request):
     
 def bill_view(request, record_id):
     record = get_object_or_404(ServiceRecord, id=record_id)
-
-    # ✅ Prepare service and component data
     services = record.services.all()
+    components_qs = record.components.all()
 
-    components_data = []
-    for component in record.components.all():
-        components_data.append({
-            "name": component.part_name,
-            "code": component.part_code,
-            "price": component.price,
-        })
+    labour_total = sum(Decimal(s.cost) for s in services) if services else Decimal(0)
+    component_total = sum(Decimal(str(c.price)) for c in components_qs) if components_qs else Decimal(0)
+    grand_total = labour_total + component_total
+
+    # Ensure record.total_cost is set correctly (safety)
+    if record.total_cost != grand_total:
+        record.total_cost = grand_total
+        record.save()
 
     context = {
         "record": record,
         "services": services,
-        "components": components_data,
-        "total_cost": record.total_cost,
+        "components": [
+            {"code": c.part_code, "name": c.part_name, "price": c.price} for c in components_qs
+        ],
+        "labour_total": labour_total,
+        "component_total": component_total,
+        "grand_total": grand_total,
     }
-
     return render(request, 'portal/bill.html', context)
+
 
 from django.http import HttpResponse
 from django.template.loader import get_template
@@ -424,7 +436,7 @@ def download_bill_pdf(request, record_id):
 
 
 def edit_dealer(request, dealer_id):
-    dealer = get_object_or_404(Dealer, dealer_id=dealer_id)  # ✅ Fix here
+    dealer = get_object_or_404(Dealer, id=dealer_id)   # numeric pk
     if request.method == "POST":
         dealer.name = request.POST.get("name")
         dealer.email = request.POST.get("email")
@@ -439,7 +451,7 @@ def edit_dealer(request, dealer_id):
 
 
 def delete_dealer(request, dealer_id):
-    dealer = get_object_or_404(Dealer, dealer_id=dealer_id)  # ✅ Fix here
+    dealer = get_object_or_404(Dealer, id=dealer_id)   # numeric pk
     dealer.delete()
     messages.success(request, "Dealer deleted successfully!")
     return redirect("admin_dashboard")

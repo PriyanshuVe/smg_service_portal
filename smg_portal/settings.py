@@ -27,7 +27,8 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-secret-please-change')
 DEBUG = False
 
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'smg-service-portal.onrender.com').split(',')
-
+# DEBUG = True
+# ALLOWED_HOSTS = ['127.0.0.1','localhost']
 
 # Application definition
 

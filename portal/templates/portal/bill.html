@@ -84,7 +84,7 @@
       {% endfor %}
       <tr>
         <td colspan="2" class="text-end"><b>Total Labour</b></td>
-        <td><b>₹{{ services|sum:"cost" }}</b></td>
+        <td><b>₹{{ labour_total }}</b></td>
       </tr>
     </tbody>
   </table>
@@ -110,8 +110,12 @@
         <tr><td colspan="3" class="text-center text-muted">No components used</td></tr>
       {% endfor %}
       <tr>
+        <td colspan="2" class="text-end"><b>Total Components</b></td>
+        <td><b>₹{{ component_total }}</b></td>
+      </tr>
+      <tr>
         <td colspan="2" class="text-end"><b>Grand Total</b></td>
-        <td><b>₹{{ record.total_cost }}</b></td>
+        <td><b>₹{{ grand_total }}</b></td>
       </tr>
     </tbody>
   </table>

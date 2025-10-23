@@ -21,8 +21,10 @@ from portal import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.index, name='index'),
-    path('admin-login/', views.admin_login, name='admin_login'),
-    path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    # path('admin-login/', views.admin_login, name='admin_login'),
+    # path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('portal-admin/login/', views.admin_login, name='admin_login'),
+    path('portal-admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('dealer-login/', views.dealer_login, name='dealer_login'),
     path('dealer-dashboard/', views.dealer_dashboard, name='dealer_dashboard'),
     path('bill/<int:record_id>/', views.bill_view, name='bill_view'),
@@ -31,8 +33,9 @@ urlpatterns = [
     path('dealer/add_inventory/', views.dealer_add_inventory, name='dealer_add_inventory'),
     # if using smg_portal/urls.py and imported views as from portal import views
     path('admin-manage-labour-components/', views.admin_manage_labour_components, name='admin_manage_labour_components'),
-    # smg_portal/urls.py
-    path('admin/dealer/edit/<str:dealer_id>/', views.edit_dealer, name='edit_dealer'),
-    path('admin/dealer/delete/<str:dealer_id>/', views.delete_dealer, name='delete_dealer'),
+    # path('admin/dealer/edit/<int:dealer_id>/', views.edit_dealer, name='edit_dealer'),
+    # path('admin/dealer/delete/<int:dealer_id>/', views.delete_dealer, name='delete_dealer'),
+    path('portal-admin/dealer/edit/<int:dealer_id>/', views.edit_dealer, name='edit_dealer'),
+    path('portal-admin/dealer/delete/<int:dealer_id>/', views.delete_dealer, name='delete_dealer'),
 ]
 

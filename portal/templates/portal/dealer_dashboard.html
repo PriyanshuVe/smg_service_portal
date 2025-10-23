@@ -8,13 +8,14 @@
 <script>
 function calculateTotal() {
     let labourBoxes = document.querySelectorAll('input[name="services"]:checked');
-    let partBoxes = document.querySelectorAll('input[name="components"]:checked');
-    let total = 0;
-    labourBoxes.forEach(cb => total += parseInt(cb.dataset.cost));
-    partBoxes.forEach(cb => total += parseInt(cb.dataset.price));
-    document.getElementById('totalCost').innerText = '₹ ' + total;
+    let partBoxes = document.querySelectorAll('input[name="components"]:checked');  // <-- updated
+    let total = 0.0;
+    labourBoxes.forEach(cb => total += parseFloat(cb.dataset.cost || 0));
+    partBoxes.forEach(cb => total += parseFloat(cb.dataset.price || 0));
+    document.getElementById('totalCost').innerText = '₹ ' + total.toFixed(2);
 }
 </script>
+
 
 </head>
 <body class="bg-white">
