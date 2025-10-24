@@ -24,11 +24,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-secret-please-change')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = False
+DEBUG = False
 
-# ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'smg-service-portal.onrender.com').split(',')
-DEBUG = True
-ALLOWED_HOSTS = ['127.0.0.1','localhost']
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'smg-service-portal.onrender.com').split(',')
+# DEBUG = True
+# ALLOWED_HOSTS = ['127.0.0.1','localhost']
 
 # Application definition
 
