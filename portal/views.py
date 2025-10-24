@@ -354,6 +354,12 @@ def dealer_add_inventory(request):
         'inventory': dealer_inventory
     })
 
+def delete_inventory(request, inventory_id):
+    inventory = get_object_or_404(Inventory, id=inventory_id)
+    inventory.delete()
+    messages.success(request, "Inventory item deleted successfully!")
+    return redirect('dealer_add_inventory')
+
     
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required

@@ -31,6 +31,7 @@ urlpatterns = [
     path('admin-manage-rates/', views.admin_manage_rates, name='admin_manage_rates'),
     path('bill/<int:record_id>/download/', views.download_bill_pdf, name='download_bill_pdf'),
     path('dealer/add_inventory/', views.dealer_add_inventory, name='dealer_add_inventory'),
+    path('dealer/inventory/delete/<int:inventory_id>/', views.delete_inventory, name='delete_inventory'),
     # if using smg_portal/urls.py and imported views as from portal import views
     path('admin-manage-labour-components/', views.admin_manage_labour_components, name='admin_manage_labour_components'),
     # path('admin/dealer/edit/<int:dealer_id>/', views.edit_dealer, name='edit_dealer'),
