@@ -70,6 +70,72 @@ class ServiceRecord(models.Model):
     def __str__(self):
         return f"{self.customer_name} ({self.dealer.name})"
 
+
+class TestRide(models.Model):
+    name = models.CharField(max_length=100)
+    mobile = models.CharField(max_length=15)
+    occupation = models.CharField(max_length=50, blank=True, null=True)
+    age = models.IntegerField(blank=True, null=True)
+    city = models.CharField(max_length=50)
+    model_name = models.CharField(max_length=100)
+    date_of_test_ride = models.DateField()
+    expectations = models.CharField(max_length=200, blank=True, null=True)
+    budget = models.CharField(max_length=50, blank=True, null=True)
+    reference = models.CharField(max_length=100, blank=True, null=True)
+    salesperson = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.model_name}"
+
     
+class CustomerFeedback(models.Model):
+    customer_name = models.CharField(max_length=100)
+    dealership_name = models.CharField(max_length=100)
+    contact_number = models.CharField(max_length=15, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    city_name = models.CharField(max_length=50)
+    reason_for_visit = models.CharField(max_length=200, blank=True, null=True)
+    date_of_visit = models.DateField()
+    date_of_birth = models.DateField(blank=True, null=True)
+    staff_behaviour = models.CharField(max_length=20)
+    services_rating = models.CharField(max_length=20)
+    purchase_experience = models.CharField(max_length=20)
+    lounge_experience = models.CharField(max_length=20)
+    access_lounge = models.CharField(max_length=5)
+    schemes_explained = models.CharField(max_length=5)
+    queries_resolved = models.CharField(max_length=5)
+    benefits_discussed = models.CharField(max_length=5)
+    overall_rating = models.IntegerField()
+    remarks = models.TextField(blank=True, null=True)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.customer_name} - {self.dealership_name}"
+
+class Quotation(models.Model):
+    dealer = models.ForeignKey(Dealer, on_delete=models.CASCADE)
+    customer_name = models.CharField(max_length=100)
+    mobile_no = models.CharField(max_length=15)
+    city = models.CharField(max_length=50)
+    date_of_quotation = models.DateField()
     
-    
+    ex_showroom = models.DecimalField(max_digits=10, decimal_places=2)
+    rc = models.DecimalField(max_digits=10, decimal_places=2)
+    insurance = models.DecimalField(max_digits=10, decimal_places=2)
+    accessories = models.DecimalField(max_digits=10, decimal_places=2)
+    hypothecation = models.DecimalField(max_digits=10, decimal_places=2)
+    cow_cess = models.DecimalField(max_digits=10, decimal_places=2)
+
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        self.total_amount = (
+            self.ex_showroom + self.rc + self.insurance +
+            self.accessories + self.hypothecation + self.cow_cess
+        )
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Quotation for {self.customer_name} ({self.date_of_quotation})"

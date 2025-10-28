@@ -31,12 +31,17 @@ urlpatterns = [
     path('admin-manage-rates/', views.admin_manage_rates, name='admin_manage_rates'),
     path('bill/<int:record_id>/download/', views.download_bill_pdf, name='download_bill_pdf'),
     path('dealer/add_inventory/', views.dealer_add_inventory, name='dealer_add_inventory'),
-    path('dealer/inventory/delete/<int:inventory_id>/', views.delete_inventory, name='delete_inventory'),
+    path('dealer/inventory/delete/<int:item_id>/', views.delete_inventory, name='delete_inventory'),
     # if using smg_portal/urls.py and imported views as from portal import views
     path('admin-manage-labour-components/', views.admin_manage_labour_components, name='admin_manage_labour_components'),
     # path('admin/dealer/edit/<int:dealer_id>/', views.edit_dealer, name='edit_dealer'),
     # path('admin/dealer/delete/<int:dealer_id>/', views.delete_dealer, name='delete_dealer'),
     path('portal-admin/dealer/edit/<int:dealer_id>/', views.edit_dealer, name='edit_dealer'),
     path('portal-admin/dealer/delete/<int:dealer_id>/', views.delete_dealer, name='delete_dealer'),
+    path('test-ride/', views.test_ride_form, name='test_ride_form'),
+    path('customer-feedback/', views.customer_feedback_form, name='customer_feedback_form'),
+    # Quotation Maker
+    path('dealer/quotation/', views.dealer_quotation, name='dealer_quotation'),
+    path('dealer/quotation/download/<int:quotation_id>/', views.download_quotation_excel, name='download_quotation_excel'),
 ]
 

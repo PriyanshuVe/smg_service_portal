@@ -1,0 +1,87 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Customer Feedback Form | SMG Portal</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+<div class="container mt-4 mb-5">
+  <h3 class="text-center text-primary mb-3">Customer Feedback Form</h3>
+
+  <form method="POST">
+    {% csrf_token %}
+    <div class="row">
+      <div class="col-md-6 mb-2"><input type="text" name="customer_name" class="form-control" placeholder="Customer Name" required></div>
+      <div class="col-md-6 mb-2"><input type="text" name="dealership_name" class="form-control" placeholder="Dealership Name" required></div>
+      <div class="col-md-6 mb-2"><input type="text" name="contact_number" class="form-control" placeholder="Contact Number"></div>
+      <div class="col-md-6 mb-2"><input type="email" name="email" class="form-control" placeholder="Email ID"></div>
+      <div class="col-md-6 mb-2"><input type="text" name="city_name" class="form-control" placeholder="City Name"></div>
+      <div class="col-md-6 mb-2"><input type="text" name="reason_for_visit" class="form-control" placeholder="Reason for Visit"></div>
+      <div class="col-md-6 mb-2"><input type="date" name="date_of_visit" class="form-control" placeholder="Date of Visit"></div>
+      <div class="col-md-6 mb-2"><input type="date" name="date_of_birth" class="form-control" placeholder="Date of Birth"></div>
+    </div>
+
+    <hr>
+    <h5>Experience Rating Level 1</h5>
+    <div class="mb-2">
+      <label>Q1) Please rate the staff behaviour:</label><br>
+      <select class="form-select" name="staff_behaviour">
+        <option>Excellent</option><option>Good</option><option>Average</option><option>Bad</option><option>Poor</option>
+      </select>
+    </div>
+    <div class="mb-2">
+      <label>Q2) Rate the services provided by the dealer:</label><br>
+      <select class="form-select" name="services_rating">
+        <option>Excellent</option><option>Good</option><option>Average</option><option>Bad</option><option>Poor</option>
+      </select>
+    </div>
+    <div class="mb-2">
+      <label>Q3) How was your experience of purchase?</label>
+      <select class="form-select" name="purchase_experience">
+        <option>Excellent</option><option>Good</option><option>Average</option><option>Bad</option><option>Poor</option>
+      </select>
+    </div>
+    <div class="mb-2">
+      <label>Q4) How was your experience in the Customer Lounge?</label>
+      <select class="form-select" name="lounge_experience">
+        <option>Excellent</option><option>Good</option><option>Average</option><option>Bad</option><option>Poor</option>
+      </select>
+    </div>
+
+    <hr>
+    <h5>Experience Rating Level 2</h5>
+    <div class="row">
+      <div class="col-md-6 mb-2">
+        <label>Q5) Were you given access to Customer Lounge?</label><br>
+        <select class="form-select" name="access_lounge"><option>Yes</option><option>No</option></select>
+      </div>
+      <div class="col-md-6 mb-2">
+        <label>Q6) Were all the schemes explained to you?</label><br>
+        <select class="form-select" name="schemes_explained"><option>Yes</option><option>No</option></select>
+      </div>
+      <div class="col-md-6 mb-2">
+        <label>Q7) Were your queries resolved by the Sales Manager?</label><br>
+        <select class="form-select" name="queries_resolved"><option>Yes</option><option>No</option></select>
+      </div>
+      <div class="col-md-6 mb-2">
+        <label>Q8) Were all benefits regarding purchase discussed?</label><br>
+        <select class="form-select" name="benefits_discussed"><option>Yes</option><option>No</option></select>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label>Overall Rating (out of 5):</label>
+      <input type="number" name="overall_rating" class="form-control" min="1" max="5">
+    </div>
+    <div class="mb-3">
+      <label>Any Other Remarks:</label>
+      <textarea name="remarks" class="form-control" rows="3"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit Feedback</button>
+  </form>
+</div>
+</body>
+</html>

@@ -5,7 +5,13 @@ from django.contrib.auth.decorators import login_required
 from .models import Dealer, ServiceRecord, LabourService, Component, Inventory, VehicleModel
 from .models import Component
 from django.utils import timezone
+from openpyxl import Workbook
+from django.utils.timezone import now
 from django.contrib import messages
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import os
+from .models import TestRide, CustomerFeedback, Quotation
 from decimal import Decimal, InvalidOperation
 from django.db import IntegrityError, transaction
 import random, string
@@ -354,10 +360,14 @@ def dealer_add_inventory(request):
         'inventory': dealer_inventory
     })
 
-def delete_inventory(request, inventory_id):
-    inventory = get_object_or_404(Inventory, id=inventory_id)
-    inventory.delete()
-    messages.success(request, "Inventory item deleted successfully!")
+def delete_inventory(request, item_id):
+    dealer_id = request.session.get('dealer_id')
+    if not dealer_id:
+        return redirect('dealer_login')
+    dealer = Dealer.objects.get(dealer_id=dealer_id)
+    inventory_item = get_object_or_404(Inventory, id=item_id, dealer=dealer)
+    inventory_item.delete()
+    messages.success(request, "Stock item deleted successfully!")
     return redirect('dealer_add_inventory')
 
     
@@ -463,3 +473,125 @@ def delete_dealer(request, dealer_id):
     return redirect("admin_dashboard")
 
 
+def test_ride_form(request):
+    if request.method == "POST":
+        data = {
+            'name': request.POST.get('name'),
+            'mobile': request.POST.get('mobile'),
+            'occupation': request.POST.get('occupation'),
+            'age': request.POST.get('age'),
+            'city': request.POST.get('city'),
+            'model_name': request.POST.get('model_name'),
+            'date_of_test_ride': request.POST.get('date_of_test_ride'),
+            'expectations': request.POST.get('expectations'),
+            'budget': request.POST.get('budget'),
+            'reference': request.POST.get('reference'),
+            'salesperson': request.POST.get('salesperson')
+        }
+
+        # ✅ Save to Database
+        TestRide.objects.create(**data)
+
+        # ✅ Try saving to Google Sheet only if credentials file exists
+        try:
+            if os.path.exists("google_creds.json"):
+                scope = ["https://spreadsheets.google.com/feeds",
+                         "https://www.googleapis.com/auth/drive"]
+                creds = ServiceAccountCredentials.from_json_keyfile_name("google_creds.json", scope)
+                client = gspread.authorize(creds)
+                sheet = client.open("SMG Test Ride Data").sheet1
+                sheet.append_row(list(data.values()))
+                print("✅ Data also saved to Google Sheet.")
+            else:
+                print("⚠️ google_creds.json not found — skipping sheet save.")
+        except Exception as e:
+            print("❌ Google Sheet error:", e)
+
+        messages.success(request, "Test ride data saved successfully!")
+        return redirect('test_ride_form')
+
+    return render(request, "portal/test_ride_form.html")
+
+def customer_feedback_form(request):
+    if request.method == "POST":
+        data = {field: request.POST.get(field) for field in [
+            'customer_name', 'dealership_name', 'contact_number', 'email',
+            'city_name', 'reason_for_visit', 'date_of_visit', 'date_of_birth',
+            'staff_behaviour', 'services_rating', 'purchase_experience', 'lounge_experience',
+            'access_lounge', 'schemes_explained', 'queries_resolved', 'benefits_discussed',
+            'overall_rating', 'remarks'
+        ]}
+
+        CustomerFeedback.objects.create(**data)
+        messages.success(request, "Feedback submitted successfully!")
+        return redirect('customer_feedback_form')
+
+    return render(request, "portal/customer_feedback_form.html")
+
+def dealer_quotation(request):
+    dealer_id = request.session.get('dealer_id')
+    if not dealer_id:
+        return redirect('dealer_login')
+    dealer = Dealer.objects.get(dealer_id=dealer_id)
+
+    if request.method == "POST":
+        customer_name = request.POST.get("customer_name")
+        mobile_no = request.POST.get("mobile_no")
+        city = request.POST.get("city")
+        date_of_quotation = request.POST.get("date_of_quotation")
+
+        ex_showroom = Decimal(request.POST.get("ex_showroom", "0"))
+        rc = Decimal(request.POST.get("rc", "0"))
+        insurance = Decimal(request.POST.get("insurance", "0"))
+        accessories = Decimal(request.POST.get("accessories", "0"))
+        hypothecation = Decimal(request.POST.get("hypothecation", "0"))
+        cow_cess = Decimal(request.POST.get("cow_cess", "0"))
+
+        quotation = Quotation.objects.create(
+            dealer=dealer,
+            customer_name=customer_name,
+            mobile_no=mobile_no,
+            city=city,
+            date_of_quotation=date_of_quotation,
+            ex_showroom=ex_showroom,
+            rc=rc,
+            insurance=insurance,
+            accessories=accessories,
+            hypothecation=hypothecation,
+            cow_cess=cow_cess,
+        )
+
+        return redirect('download_quotation_excel', quotation_id=quotation.id)
+
+    quotations = Quotation.objects.filter(dealer=dealer).order_by('-created_at')
+    return render(request, 'portal/dealer_quotation.html', {'dealer': dealer, 'quotations': quotations})
+
+
+def download_quotation_excel(request, quotation_id):
+    quotation = get_object_or_404(Quotation, id=quotation_id)
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Quotation"
+
+    ws.append(["SMG Electric - Quotation"])
+    ws.append(["Customer Name", quotation.customer_name])
+    ws.append(["Mobile No", quotation.mobile_no])
+    ws.append(["City", quotation.city])
+    ws.append(["Date", quotation.date_of_quotation.strftime("%d-%m-%Y")])
+    ws.append([])
+
+    ws.append(["Details", "Amount (₹)"])
+    ws.append(["Ex Showroom", quotation.ex_showroom])
+    ws.append(["RC", quotation.rc])
+    ws.append(["Insurance", quotation.insurance])
+    ws.append(["Accessories", quotation.accessories])
+    ws.append(["Hypothecation", quotation.hypothecation])
+    ws.append(["Cow Cess", quotation.cow_cess])
+    ws.append([])
+    ws.append(["Total", quotation.total_amount])
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    filename = f"Quotation_{quotation.customer_name}_{now().strftime('%Y%m%d')}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename={filename}'
+    wb.save(response)
+    return response
