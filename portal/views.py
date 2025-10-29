@@ -14,7 +14,7 @@ import os
 from .models import TestRide, CustomerFeedback, Quotation
 from decimal import Decimal, InvalidOperation
 from django.db import IntegrityError, transaction
-import random, string
+import random, string, requests
 from django.http import HttpResponse
 
 
@@ -523,7 +523,16 @@ def customer_feedback_form(request):
         ]}
 
         CustomerFeedback.objects.create(**data)
-        messages.success(request, "Feedback submitted successfully!")
+         # Push to Google Sheets
+        try:
+            response = requests.post("https://script.google.com/macros/s/AKfycbxF_HpPGAdXYK0-sdJ5mFogeLTCeNG5Kt68sRnFqtKvFyWvswYE3iMaaYliqLd0Y1c/exec", json=data)
+            if response.status_code == 200:
+                messages.success(request, "Feedback submitted successfully and synced to Google Sheets!")
+            else:
+                messages.warning(request, "Feedback saved locally but failed to sync with Google Sheet.")
+        except Exception as e:
+            messages.warning(request, f"Feedback saved locally. Sheet sync error: {e}")
+
         return redirect('customer_feedback_form')
 
     return render(request, "portal/customer_feedback_form.html")
