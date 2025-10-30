@@ -43,5 +43,6 @@ urlpatterns = [
     # Quotation Maker
     path('dealer/quotation/', views.dealer_quotation, name='dealer_quotation'),
     path('dealer/quotation/download/<int:quotation_id>/', views.download_quotation_excel, name='download_quotation_excel'),
+    path('pdi-inspection/', views.pdi_inspection_form, name='pdi_inspection_form'),
 ]
 

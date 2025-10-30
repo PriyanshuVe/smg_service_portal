@@ -11,7 +11,7 @@ from django.contrib import messages
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import os
-from .models import TestRide, CustomerFeedback, Quotation
+from .models import TestRide, CustomerFeedback, Quotation, PDIInspection
 from decimal import Decimal, InvalidOperation
 from django.db import IntegrityError, transaction
 import random, string, requests
@@ -486,28 +486,23 @@ def test_ride_form(request):
             'expectations': request.POST.get('expectations'),
             'budget': request.POST.get('budget'),
             'reference': request.POST.get('reference'),
-            'salesperson': request.POST.get('salesperson')
+            'salesperson': request.POST.get('salesperson'),
         }
 
-        # ✅ Save to Database
+        # ✅ Save locally to DB
         TestRide.objects.create(**data)
 
-        # ✅ Try saving to Google Sheet only if credentials file exists
+        # ✅ Push to Google Sheet (Apps Script endpoint)
+        GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxIz5DSv1SQS0CNzzcvZo8nPyoDLpv6cgdjpjnDlv-BLo4MVtHdHCe01kmPg5A7xy8g/exec"  # replace with your actual script URL
         try:
-            if os.path.exists("google_creds.json"):
-                scope = ["https://spreadsheets.google.com/feeds",
-                         "https://www.googleapis.com/auth/drive"]
-                creds = ServiceAccountCredentials.from_json_keyfile_name("google_creds.json", scope)
-                client = gspread.authorize(creds)
-                sheet = client.open("SMG Test Ride Data").sheet1
-                sheet.append_row(list(data.values()))
-                print("✅ Data also saved to Google Sheet.")
+            response = requests.post(GOOGLE_SCRIPT_URL, json=data)
+            if response.status_code == 200:
+                messages.success(request, "Test ride data saved and synced to Google Sheet successfully!")
             else:
-                print("⚠️ google_creds.json not found — skipping sheet save.")
+                messages.warning(request, "Saved locally but failed to sync with Google Sheet.")
         except Exception as e:
-            print("❌ Google Sheet error:", e)
+            messages.warning(request, f"Saved locally. Sheet sync error: {e}")
 
-        messages.success(request, "Test ride data saved successfully!")
         return redirect('test_ride_form')
 
     return render(request, "portal/test_ride_form.html")
@@ -604,3 +599,36 @@ def download_quotation_excel(request, quotation_id):
     response['Content-Disposition'] = f'attachment; filename={filename}'
     wb.save(response)
     return response
+
+def pdi_inspection_form(request):
+    if request.method == "POST":
+        data = {
+            'dealer_name': request.POST.get('dealer_name'),
+            'location': request.POST.get('location'),
+            'dealer_code': request.POST.get('dealer_code'),
+            'model_name': request.POST.get('model_name'),
+            'date': request.POST.get('date'),
+            'vin': request.POST.get('vin'),
+            'battery_no': request.POST.get('battery_no'),
+            'charger_no': request.POST.get('charger_no'),
+            'motor_no': request.POST.get('motor_no'),
+            'controller_no': request.POST.get('controller_no'),
+            'remarks': request.POST.get('remarks'),
+        }
+
+        PDIInspection.objects.create(**data)
+
+        # ✅ Push to Google Sheet
+        GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxxVxtarpCF__wFfgoiE57wuVjZyetksdcCvADmnENjjokWAGZQ1ZWYkQmD9EQ1DKr1jQ/exec"  # replace with actual Apps Script link
+        try:
+            response = requests.post(GOOGLE_SCRIPT_URL, json=data)
+            if response.status_code == 200:
+                messages.success(request, "PDI inspection saved and synced to Google Sheet!")
+            else:
+                messages.warning(request, "PDI saved locally but failed to sync to Google Sheet.")
+        except Exception as e:
+            messages.warning(request, f"Saved locally. Sheet sync error: {e}")
+
+        return redirect('pdi_inspection_form')
+
+    return render(request, "portal/pdi_inspection_form.html")

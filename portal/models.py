@@ -139,3 +139,20 @@ class Quotation(models.Model):
 
     def __str__(self):
         return f"Quotation for {self.customer_name} ({self.date_of_quotation})"
+
+class PDIInspection(models.Model):
+    dealer_name = models.CharField(max_length=100)
+    location = models.CharField(max_length=100)
+    dealer_code = models.CharField(max_length=50)
+    model_name = models.CharField(max_length=50)
+    date = models.DateField()
+    vin = models.CharField(max_length=50)
+    battery_no = models.CharField(max_length=50)
+    charger_no = models.CharField(max_length=50)
+    motor_no = models.CharField(max_length=50)
+    controller_no = models.CharField(max_length=50)
+    remarks = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"PDI – {self.model_name} ({self.vin})"

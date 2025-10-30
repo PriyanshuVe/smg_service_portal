@@ -26,7 +26,7 @@ function calculateTotal() {
         <a href="{% url 'test_ride_form' %}" class="btn btn-outline-success btn-sm me-2">Customer Test Ride</a>
         <a href="{% url 'customer_feedback_form' %}" class="btn btn-outline-info btn-sm me-2">Customer Feedback</a>
         <a href="{% url 'dealer_quotation' %}" class="btn btn-outline-primary btn-sm mt-2">Quotation Maker</a>
-        <a href="#" class="btn btn-outline-secondary btn-sm disabled">PDI Inspection Sheet (Coming Soon)</a>
+        <a href="{% url 'pdi_inspection_form' %}" class="btn btn-outline-secondary btn-sm me-2">PDI Inspection Sheet</a>
     </div>
 
     <a href="{% url 'dealer_add_inventory' %}" class="btn btn-outline-primary btn-sm mt-2">Manage Inventory</a>

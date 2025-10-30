@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PDI Inspection Sheet | SMG Portal</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+<div class="container mt-4 mb-5">
+  <h3 class="text-center text-primary mb-3">PDI Inspection Sheet – GENZ</h3>
+  <form method="POST">
+    {% csrf_token %}
+    <div class="row">
+      <div class="col-md-6 mb-2"><input type="text" name="dealer_name" class="form-control" placeholder="Dealer Name" required></div>
+      <div class="col-md-6 mb-2"><input type="text" name="location" class="form-control" placeholder="Location" required></div>
+      <div class="col-md-6 mb-2"><input type="text" name="dealer_code" class="form-control" placeholder="Dealer Code" required></div>
+      <div class="col-md-6 mb-2"><input type="text" name="model_name" class="form-control" placeholder="Model" required></div>
+      <div class="col-md-6 mb-2"><input type="date" name="date" class="form-control" required></div>
+      <div class="col-md-6 mb-2"><input type="text" name="vin" class="form-control" placeholder="VIN" required></div>
+      <div class="col-md-6 mb-2"><input type="text" name="battery_no" class="form-control" placeholder="Battery No"></div>
+      <div class="col-md-6 mb-2"><input type="text" name="charger_no" class="form-control" placeholder="Charger No"></div>
+      <div class="col-md-6 mb-2"><input type="text" name="motor_no" class="form-control" placeholder="Motor No"></div>
+      <div class="col-md-6 mb-2"><input type="text" name="controller_no" class="form-control" placeholder="Controller No"></div>
+    </div>
+
+    <div class="mb-3">
+      <label>Any Other Remarks:</label>
+      <textarea name="remarks" class="form-control" rows="3"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-2">Submit PDI Sheet</button>
+  </form>
+</div>
+</body>
+</html>
