@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <title>Dealer Dashboard | SMG Portal</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 <script>
 function calculateTotal() {
     let labourBoxes = document.querySelectorAll('input[name="services"]:checked');
@@ -35,6 +36,16 @@ function calculateTotal() {
         <a href="{% url 'dealer_quotation' %}" class="btn btn-outline-primary btn-sm mt-2">Quotation Maker</a>
         <a href="{% url 'pdi_inspection_form' %}" class="btn btn-outline-secondary btn-sm me-2">PDI Inspection Sheet</a>
     </div>
+    <div class="mb-3 text-center">
+    <a href="{% url 'dealer_sale_list' %}" class="btn btn-success me-2">
+        <i class="bi bi-cart"></i> Dealer-to-Dealer Sale
+    </a>
+    <a href="{% url 'dealer_purchase_list' %}" class="btn btn-info">
+        <i class="bi bi-bag"></i> Dealer-to-Dealer Purchase
+    </a>
+    </div>
+    <hr class="my-3">
+
 
     <a href="{% url 'dealer_add_inventory' %}" class="btn btn-outline-primary btn-sm mt-2">Manage Inventory</a>
     <p class="text-muted">Dealer ID: {{ dealer.dealer_id }}</p>
