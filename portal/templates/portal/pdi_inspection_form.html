@@ -13,23 +13,39 @@
     {% csrf_token %}
     <div class="row">
       <div class="col-md-6 mb-2"><input type="text" name="dealer_name" class="form-control" placeholder="Dealer Name" required></div>
-      <div class="col-md-6 mb-2"><input type="text" name="location" class="form-control" placeholder="Location" required></div>
       <div class="col-md-6 mb-2"><input type="text" name="dealer_code" class="form-control" placeholder="Dealer Code" required></div>
       <div class="col-md-6 mb-2"><input type="text" name="model_name" class="form-control" placeholder="Model" required></div>
       <div class="col-md-6 mb-2"><input type="date" name="date" class="form-control" required></div>
       <div class="col-md-6 mb-2"><input type="text" name="vin" class="form-control" placeholder="VIN" required></div>
-      <div class="col-md-6 mb-2"><input type="text" name="battery_no" class="form-control" placeholder="Battery No"></div>
-      <div class="col-md-6 mb-2"><input type="text" name="charger_no" class="form-control" placeholder="Charger No"></div>
-      <div class="col-md-6 mb-2"><input type="text" name="motor_no" class="form-control" placeholder="Motor No"></div>
-      <div class="col-md-6 mb-2"><input type="text" name="controller_no" class="form-control" placeholder="Controller No"></div>
+      <div class="col-md-6 mb-2"><input type="text" name="battery_no" class="form-control" placeholder="Battery No" required></div>
+      <div class="col-md-6 mb-2"><input type="text" name="charger_no" class="form-control" placeholder="Charger No" required></div>
+      <div class="col-md-6 mb-2"><input type="text" name="motor_no" class="form-control" placeholder="Motor No" required></div>
+      <div class="col-md-6 mb-2"><input type="text" name="controller_no" class="form-control" placeholder="Controller No" required></div>
     </div>
+
+    <hr>
+    <h5 class="text-primary">Inspection Checklist</h5>
+    <table class="table table-bordered table-sm">
+      <thead class="table-light">
+        <tr><th>S No</th><th>Part Name</th><th>OK</th><th>NG</th></tr>
+      </thead>
+      <tbody>
+        {% for i, item in checklist %}
+        <tr>
+          <td>{{ i }}</td>
+          <td>{{ item }}</td>
+          <td><input type="radio" name="result_{{ i }}" value="OK" required></td>
+          <td><input type="radio" name="result_{{ i }}" value="NG"></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
 
     <div class="mb-3">
       <label>Any Other Remarks:</label>
       <textarea name="remarks" class="form-control" rows="3"></textarea>
     </div>
-
-    <button type="submit" class="btn btn-primary mt-2">Submit PDI Sheet</button>
+    <button type="submit" class="btn btn-primary">Submit PDI Sheet</button>
   </form>
 </div>
 </body>

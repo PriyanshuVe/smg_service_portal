@@ -57,18 +57,29 @@ class Inventory(models.Model):
 
 class ServiceRecord(models.Model):
     dealer = models.ForeignKey(Dealer, on_delete=models.CASCADE)
+    
+    # 🔹 Unique, semi-editable Service ID
+    service_id = models.CharField(max_length=30, unique=True)
+    
+    # 🔹 Existing fields
     customer_name = models.CharField(max_length=100)
     customer_phone = models.CharField(max_length=15)
     date_of_sale = models.DateField()
     last_service_date = models.DateField()
     service_kms = models.IntegerField()
     services = models.ManyToManyField(LabourService, blank=True)
-    components = models.ManyToManyField('Component', blank=True)  # newly added
+    components = models.ManyToManyField('Component', blank=True)
     total_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
+    # 🔹 Newly added fields
+    battery_number = models.CharField(max_length=50, blank=True, null=True)
+    jc_number = models.CharField(max_length=50, blank=True, null=True)
+    motor_number = models.CharField(max_length=50, blank=True, null=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.customer_name} ({self.dealer.name})"
+        return f"{self.service_id} - {self.customer_name} ({self.dealer.name})"
 
 
 class TestRide(models.Model):
@@ -151,8 +162,101 @@ class PDIInspection(models.Model):
     charger_no = models.CharField(max_length=50)
     motor_no = models.CharField(max_length=50)
     controller_no = models.CharField(max_length=50)
+    results = models.TextField(blank=True, null=True)  # stores JSON OK/NG answers
     remarks = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"PDI – {self.model_name} ({self.vin})"
+
+class Technician(models.Model):
+    name = models.CharField(max_length=100)
+    mobile_number = models.CharField(max_length=15)
+    date_of_joining = models.DateField()
+    address = models.TextField()
+    trainings_done = models.TextField(blank=True, null=True)
+    training_certification = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+class DealerToDealerSale(models.Model):
+    # Primary Dealer Details
+    primary_dealer_name = models.CharField(max_length=100)
+    primary_gst = models.CharField(max_length=50)
+    primary_code = models.CharField(max_length=50)
+    primary_phone = models.CharField(max_length=20)
+    primary_address = models.TextField()
+    primary_email = models.EmailField()
+
+    # Secondary Dealer Details
+    secondary_dealer_name = models.CharField(max_length=100)
+    secondary_gst = models.CharField(max_length=50)
+    secondary_code = models.CharField(max_length=50)
+    secondary_phone = models.CharField(max_length=20)
+    secondary_address = models.TextField()
+    secondary_email = models.EmailField()
+
+    # Product & Sale Info
+    date_of_sale = models.DateField()
+    model_name = models.CharField(max_length=100)
+    product_color = models.CharField(max_length=50)
+    battery_number = models.CharField(max_length=50)
+    chasis_number = models.CharField(max_length=50)
+    motor_number = models.CharField(max_length=50)
+    product_code = models.CharField(max_length=50)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    # Sales Representative
+    sales_rep_name = models.CharField(max_length=100)
+    sales_rep_mobile = models.CharField(max_length=20)
+    sales_rep_email = models.EmailField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Sale – {self.model_name} ({self.primary_dealer_name} → {self.secondary_dealer_name})"
+
+    class Meta:
+        ordering = ['-id']
+
+class DealerToDealerPurchase(models.Model):
+    # Primary Dealer Details
+    primary_dealer_name = models.CharField(max_length=100)
+    primary_gst = models.CharField(max_length=50)
+    primary_code = models.CharField(max_length=50)
+    primary_phone = models.CharField(max_length=20)
+    primary_address = models.TextField()
+    primary_email = models.EmailField()
+
+    # Secondary Dealer Details
+    secondary_dealer_name = models.CharField(max_length=100)
+    secondary_gst = models.CharField(max_length=50)
+    secondary_code = models.CharField(max_length=50)
+    secondary_phone = models.CharField(max_length=20)
+    secondary_address = models.TextField()
+    secondary_email = models.EmailField()
+
+    # Product & Purchase Info
+    date_of_purchase = models.DateField()
+    model_name = models.CharField(max_length=100)
+    product_color = models.CharField(max_length=50)
+    battery_number = models.CharField(max_length=50)
+    chasis_number = models.CharField(max_length=50)
+    motor_number = models.CharField(max_length=50)
+    product_code = models.CharField(max_length=50)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    # Purchase Representative
+    purchase_rep_name = models.CharField(max_length=100)
+    purchase_rep_mobile = models.CharField(max_length=20)
+    purchase_rep_email = models.EmailField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Purchase – {self.model_name} ({self.secondary_dealer_name})"
+
+    class Meta:
+        ordering = ['-id']

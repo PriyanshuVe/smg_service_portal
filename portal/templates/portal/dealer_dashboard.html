@@ -21,6 +21,13 @@ function calculateTotal() {
 <body class="bg-white">
 <div class="container mt-4">
     <h4 class="text-primary">Welcome, {{ dealer.name }}</h4>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} mt-2 text-center">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
     <div class="mt-3 mb-4">
         <h5 class="text-primary">Quick Access</h5>
         <a href="{% url 'test_ride_form' %}" class="btn btn-outline-success btn-sm me-2">Customer Test Ride</a>
@@ -42,6 +49,10 @@ function calculateTotal() {
             {% csrf_token %}
             <div class="row">
                 <div class="col-md-4 mb-2">
+                    <label class="form-label">Service ID</label>
+                    <input type="text" name="service_id" value="{{ default_service_id }}" class="form-control" readonly>
+                </div>
+                <div class="col-md-4 mb-2">
                     <input type="text" name="customer_name" class="form-control" placeholder="Customer Name" required>
                 </div>
                 <div class="col-md-4 mb-2">
@@ -55,6 +66,15 @@ function calculateTotal() {
                 </div>
                 <div class="col-md-4 mb-2">
                     <input type="number" name="service_kms" class="form-control" placeholder="Service (in kms)" required>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <input type="text" name="battery_number" class="form-control" placeholder="Battery Number">
+                </div>
+                <div class="col-md-4 mb-2">
+                    <input type="text" name="jc_number" class="form-control" placeholder="JC Number">
+                </div>
+                <div class="col-md-4 mb-2">
+                    <input type="text" name="motor_number" class="form-control" placeholder="Motor Number">
                 </div>
             </div>
 

@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login
+from django.utils.crypto import get_random_string
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from .models import Dealer, ServiceRecord, LabourService, Component, Inventory, VehicleModel
@@ -8,15 +9,19 @@ from django.utils import timezone
 from openpyxl import Workbook
 from django.utils.timezone import now
 from django.contrib import messages
-import gspread
+import gspread, json
 from oauth2client.service_account import ServiceAccountCredentials
 import os
-from .models import TestRide, CustomerFeedback, Quotation, PDIInspection
+from .models import TestRide, CustomerFeedback, Dealer, Quotation, PDIInspection, Technician, DealerToDealerPurchase, DealerToDealerSale
 from decimal import Decimal, InvalidOperation
 from django.db import IntegrityError, transaction
 import random, string, requests
 from django.http import HttpResponse
 
+def generate_service_id():
+    prefix = "SMG-SRV-"
+    random_part = get_random_string(length=4, allowed_chars='0123456789')
+    return f"{prefix}{random_part}"
 
 def is_portal_admin(request):
     """
@@ -253,6 +258,10 @@ def dealer_dashboard(request):
     services_list = LabourService.objects.all()
     components_list = Component.objects.all()
 
+    service_id = request.POST.get("service_id")
+    if not service_id:
+        service_id = generate_service_id()
+
     if request.method == "POST":
         cname = request.POST.get('customer_name', '').strip()
         cphone = request.POST.get('customer_phone', '').strip()
@@ -269,11 +278,15 @@ def dealer_dashboard(request):
         # create record
         record = ServiceRecord.objects.create(
             dealer=dealer,
+            service_id=service_id,
             customer_name=cname,
             customer_phone=cphone,
             date_of_sale=sale_date,
             last_service_date=last_service,
-            service_kms=kms
+            service_kms=kms,
+            battery_number=request.POST.get('battery_number'),
+            jc_number=request.POST.get('jc_number'),
+            motor_number=request.POST.get('motor_number')
         )
 
         # add selected services
@@ -309,19 +322,22 @@ def dealer_dashboard(request):
         # save totals (DecimalField)
         record.total_cost = labour_total + component_total
         record.save()
+        messages.success(request, "Service record saved successfully!")
 
         return redirect('bill_view', record_id=record.id)
 
     # GET render
     history = ServiceRecord.objects.filter(dealer=dealer).order_by('-created_at')
     dealer_inventory = Inventory.objects.filter(dealer=dealer)
+    default_service_id = generate_service_id()
 
     return render(request, 'portal/dealer_dashboard.html', {
         'dealer': dealer,
         'services': history,
         'labour_services': services_list,
         'components': components_list,
-        'inventory': dealer_inventory
+        'inventory': dealer_inventory,
+        'default_service_id': default_service_id
     })
 
 
@@ -536,6 +552,7 @@ def dealer_quotation(request):
     dealer_id = request.session.get('dealer_id')
     if not dealer_id:
         return redirect('dealer_login')
+
     dealer = Dealer.objects.get(dealer_id=dealer_id)
 
     if request.method == "POST":
@@ -564,6 +581,29 @@ def dealer_quotation(request):
             hypothecation=hypothecation,
             cow_cess=cow_cess,
         )
+
+        # ✅ calculate total and save
+        quotation.total_amount = (
+            quotation.ex_showroom + quotation.rc + quotation.insurance +
+            quotation.accessories + quotation.hypothecation + quotation.cow_cess
+        )
+        quotation.save()
+
+        # ✅ Optional Google Sheet sync
+        try:
+            GOOGLE_QUOTATION_SHEET = "https://script.google.com/macros/s/AKfycbyjrhV1ExbfapB49v1rvG-vYX1WignWAUrk93dp2jBa8iCUmJdRzHwZtRpHjl1jmczO/exec"
+            payload = {
+                "Dealer": dealer.dealer_name if hasattr(dealer, "dealer_name") else "Unknown Dealer",
+                "Customer": quotation.customer_name,
+                "Mobile": quotation.mobile_no,
+                "City": quotation.city,
+                "Date": str(quotation.date_of_quotation),
+                "Total": float(quotation.total_amount)
+            }
+            response = requests.post(GOOGLE_QUOTATION_SHEET, json=payload)
+            print("✅ Quotation synced:", response.status_code)
+        except Exception as e:
+            print("⚠️ Quotation sheet sync error:", e)
 
         return redirect('download_quotation_excel', quotation_id=quotation.id)
 
@@ -601,8 +641,39 @@ def download_quotation_excel(request, quotation_id):
     return response
 
 def pdi_inspection_form(request):
+    # Full checklist (as per official PDI sheet)
+    checklist_items = [
+        "Lockset ON/OFF function",
+        "Seat lock and Side lock function",
+        "Instrument Cluster Functions / Battery Level Indication",
+        "Electrical Part Check (Head light, Tail light, Horn, Indicators, USB Port)",
+        "Throttle Operation Check",
+        "Switch Function",
+        "Brake Sensing Function",
+        "Motor cut off while applying brake",
+        "Tail light function / Brake sensing symbol",
+        "Handle bar position / fitment",
+        "Charging socket Proper Functioning",
+        "Luggage box accessories confirmation",
+        "Mirror",
+        "Charger",
+        "Tool kit",
+        "Vin plate",
+        "Chakori connector fitment",
+        "MCB terminal wire connection fitment",
+        "Front Wheel tyre (Seating/Wobbling/Air leakage)",
+        "Rear Wheel tyre (Seating/Wobbling/Air leakage)",
+        "PP parts aesthetic inspection",
+        "Battery Clamp fitment",
+        "Rear shocker function / Abnormal noise on test drive",
+        "Battery charging upto 100%",
+        "Test drive vehicle (min 5 km during PDI)",
+        "Any other remark not mentioned above"
+    ]
+
     if request.method == "POST":
-        data = {
+        # Collect general data
+        general_data = {
             'dealer_name': request.POST.get('dealer_name'),
             'location': request.POST.get('location'),
             'dealer_code': request.POST.get('dealer_code'),
@@ -616,19 +687,255 @@ def pdi_inspection_form(request):
             'remarks': request.POST.get('remarks'),
         }
 
-        PDIInspection.objects.create(**data)
+        # Collect OK/NG results for each point
+        result_data = {item: request.POST.get(f"result_{i+1}") for i, item in enumerate(checklist_items)}
+        general_data["results"] = json.dumps(result_data)
 
-        # ✅ Push to Google Sheet
-        GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxxVxtarpCF__wFfgoiE57wuVjZyetksdcCvADmnENjjokWAGZQ1ZWYkQmD9EQ1DKr1jQ/exec"  # replace with actual Apps Script link
+        # Save in database
+        PDIInspection.objects.create(**general_data)
+
+        # ✅ Push to Google Sheet (keep your real Apps Script link)
+        GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxxVxtarpCF__wFfgoiE57wuVjZyetksdcCvADmnENjjokWAGZQ1ZWYkQmD9EQ1DKr1jQ/exec"
         try:
-            response = requests.post(GOOGLE_SCRIPT_URL, json=data)
+            response = requests.post(GOOGLE_SCRIPT_URL, json=general_data)
             if response.status_code == 200:
-                messages.success(request, "PDI inspection saved and synced to Google Sheet!")
+                messages.success(request, "✅ PDI inspection saved and synced to Google Sheet!")
             else:
-                messages.warning(request, "PDI saved locally but failed to sync to Google Sheet.")
+                messages.warning(request, "⚠️ PDI saved locally but failed to sync with Google Sheet.")
         except Exception as e:
-            messages.warning(request, f"Saved locally. Sheet sync error: {e}")
+            messages.warning(request, f"⚠️ Saved locally. Sheet sync error: {e}")
 
         return redirect('pdi_inspection_form')
 
-    return render(request, "portal/pdi_inspection_form.html")
+    # render form with checklist
+    return render(request, "portal/pdi_inspection_form.html", {"checklist": enumerate(checklist_items, start=1)})
+
+
+def technician_list(request):
+    if request.method == "POST":
+        name = request.POST.get("name")
+        mobile_number = request.POST.get("mobile_number")
+        date_of_joining = request.POST.get("date_of_joining")
+        address = request.POST.get("address")
+        trainings_done = request.POST.get("trainings_done")
+        training_certification = request.POST.get("training_certification") == "on"
+
+        Technician.objects.create(
+            name=name,
+            mobile_number=mobile_number,
+            date_of_joining=date_of_joining,
+            address=address,
+            trainings_done=trainings_done,
+            training_certification=training_certification
+        )
+        messages.success(request, "Technician added successfully!")
+        return redirect('technician_list')
+
+    technicians = Technician.objects.all().order_by('-created_at')
+    return render(request, "portal/technician_list.html", {'technicians': technicians})
+
+
+def delete_technician(request, id):
+    tech = get_object_or_404(Technician, id=id)
+    tech.delete()
+    messages.success(request, "Technician deleted successfully!")
+    return redirect('technician_list')
+
+def edit_technician(request, id):
+    tech = get_object_or_404(Technician, id=id)
+    if request.method == "POST":
+        tech.name = request.POST.get("name")
+        tech.mobile_number = request.POST.get("mobile_number")
+        tech.date_of_joining = request.POST.get("date_of_joining")
+        tech.address = request.POST.get("address")
+        tech.trainings_done = request.POST.get("trainings_done")
+        tech.training_certification = request.POST.get("training_certification") == "on"
+        tech.save()
+        messages.success(request, "Technician updated successfully!")
+        return redirect('technician_list')
+    return render(request, "portal/edit_technician.html", {"tech": tech})
+
+
+# --- DEALER TO DEALER SALE ---
+def dealer_sale_list(request):
+    sales = DealerToDealerSale.objects.all().order_by('-created_at')
+    return render(request, "portal/dealer_sale_list.html", {"sales": sales})
+
+def dealer_sale_add(request):
+    if request.method == "POST":
+        data = {
+            "primary_dealer_name": request.POST.get("primary_dealer_name"),
+            "primary_gst": request.POST.get("primary_gst"),
+            "primary_code": request.POST.get("primary_code"),
+            "primary_phone": request.POST.get("primary_phone"),
+            "primary_email": request.POST.get("primary_email"),
+            "primary_address": request.POST.get("primary_address"),
+
+            "secondary_dealer_name": request.POST.get("secondary_dealer_name"),
+            "secondary_gst": request.POST.get("secondary_gst"),
+            "secondary_code": request.POST.get("secondary_code"),
+            "secondary_phone": request.POST.get("secondary_phone"),
+            "secondary_email": request.POST.get("secondary_email"),
+            "secondary_address": request.POST.get("secondary_address"),
+
+            "date_of_sale": request.POST.get("date_of_sale"),
+            "model_name": request.POST.get("model_name"),
+            "product_color": request.POST.get("product_color"),
+            "battery_number": request.POST.get("battery_number"),
+            "chasis_number": request.POST.get("chasis_number"),
+            "motor_number": request.POST.get("motor_number"),
+            "product_code": request.POST.get("product_code"),
+            "price": request.POST.get("price"),
+
+            "sales_rep_name": request.POST.get("sales_rep_name"),
+            "sales_rep_mobile": request.POST.get("sales_rep_mobile"),
+            "sales_rep_email": request.POST.get("sales_rep_email"),
+        }
+
+        # ✅ Save locally
+        DealerToDealerSale.objects.create(**data)
+
+        # ✅ Google Sheet Integration
+        GOOGLE_SHEET_SALE = "https://script.google.com/macros/s/AKfycbyKkJTIGyorpE5XWKa17elvHDiXDCslN3tiOftL-Ds6y1ZIjXpqxrQqB7Lgcuece5O7pg/exec"  # Replace with your sheet link
+        try:
+            response = requests.post(GOOGLE_SHEET_SALE, json=data)
+            if response.status_code == 200:
+                messages.success(request, "✅ Dealer Sale saved and synced to Google Sheet!")
+            else:
+                messages.warning(request, "✅ Saved locally but Google Sheet sync failed.")
+        except Exception as e:
+            messages.warning(request, f"✅ Saved locally. Sheet sync error: {e}")
+
+        return redirect('dealer_sale_list')
+
+    return render(request, "portal/dealer_sale_add.html")
+
+
+def delete_dealer_sale(request, id):
+    sale = get_object_or_404(DealerToDealerSale, id=id)
+    sale.delete()
+    messages.success(request, "🗑️ Sale record deleted successfully!")
+    return redirect('dealer_sale_list')
+
+
+# --- DEALER TO DEALER PURCHASE ---
+def dealer_purchase_list(request):
+    purchases = DealerToDealerPurchase.objects.all().order_by('-created_at')
+    return render(request, "portal/dealer_purchase_list.html", {"purchases": purchases})
+
+
+def dealer_purchase_add(request):
+    if request.method == "POST":
+        data = {
+            "primary_dealer_name": request.POST.get("primary_dealer_name"),
+            "primary_gst": request.POST.get("primary_gst"),
+            "primary_code": request.POST.get("primary_code"),
+            "primary_phone": request.POST.get("primary_phone"),
+            "primary_email": request.POST.get("primary_email"),
+            "primary_address": request.POST.get("primary_address"),
+
+            "secondary_dealer_name": request.POST.get("secondary_dealer_name"),
+            "secondary_gst": request.POST.get("secondary_gst"),
+            "secondary_code": request.POST.get("secondary_code"),
+            "secondary_phone": request.POST.get("secondary_phone"),
+            "secondary_email": request.POST.get("secondary_email"),
+            "secondary_address": request.POST.get("secondary_address"),
+
+            "date_of_purchase": request.POST.get("date_of_purchase"),
+            "model_name": request.POST.get("model_name"),
+            "product_color": request.POST.get("product_color"),
+            "battery_number": request.POST.get("battery_number"),
+            "chasis_number": request.POST.get("chasis_number"),
+            "motor_number": request.POST.get("motor_number"),
+            "product_code": request.POST.get("product_code"),
+            "price": request.POST.get("price"),
+
+            "purchase_rep_name": request.POST.get("purchase_rep_name"),
+            "purchase_rep_mobile": request.POST.get("purchase_rep_mobile"),
+            "purchase_rep_email": request.POST.get("purchase_rep_email"),
+        }
+
+        # ✅ Save locally
+        DealerToDealerPurchase.objects.create(**data)
+
+        # ✅ Google Sheet Integration
+        GOOGLE_SHEET_PURCHASE = "https://script.google.com/macros/s/AKfycbw4TQ2G4QCyvuo5lF66GYxU7VCcV_qTwQ0ofAjy87IoxDfJzmdbqwoiWRkv2cnX3_wh/exec"  # Replace with your sheet link
+        try:
+            response = requests.post(GOOGLE_SHEET_PURCHASE, json=data)
+            if response.status_code == 200:
+                messages.success(request, "✅ Dealer Purchase saved and synced to Google Sheet!")
+            else:
+                messages.warning(request, "✅ Saved locally but Google Sheet sync failed.")
+        except Exception as e:
+            messages.warning(request, f"✅ Saved locally. Sheet sync error: {e}")
+
+        return redirect('dealer_purchase_list')
+
+    return render(request, "portal/dealer_purchase_add.html")
+
+
+def delete_dealer_purchase(request, id):
+    purchase = get_object_or_404(DealerToDealerPurchase, id=id)
+    purchase.delete()
+    messages.success(request, "🗑️ Purchase record deleted successfully!")
+    return redirect('dealer_purchase_list')
+
+
+# ==============================
+# ✅ Excel Export Functions
+# ==============================
+from openpyxl import Workbook
+from django.http import HttpResponse
+
+def export_sales_excel(request):
+    sales = DealerToDealerSale.objects.all().order_by('-id')
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Dealer Sales"
+
+    headers = [
+        "Primary Dealer", "Secondary Dealer", "Model", "Date of Sale", "Battery No",
+        "Motor No", "Product Code", "Price", "Sales Rep"
+    ]
+    ws.append(headers)
+
+    for s in sales:
+        ws.append([
+            s.primary_dealer_name, s.secondary_dealer_name, s.model_name,
+            s.date_of_sale, s.battery_number, s.motor_number,
+            s.product_code, s.price, s.sales_rep_name
+        ])
+
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = "attachment; filename=Dealer_Sales.xlsx"
+    wb.save(response)
+    return response
+
+
+def export_purchases_excel(request):
+    purchases = DealerToDealerPurchase.objects.all().order_by('-id')
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Dealer Purchases"
+
+    headers = [
+        "Primary Dealer", "Secondary Dealer", "Model", "Date of Purchase", "Battery No",
+        "Motor No", "Product Code", "Price", "Purchase Rep"
+    ]
+    ws.append(headers)
+
+    for p in purchases:
+        ws.append([
+            p.primary_dealer_name, p.secondary_dealer_name, p.model_name,
+            p.date_of_purchase, p.battery_number, p.motor_number,
+            p.product_code, p.price, p.purchase_rep_name
+        ])
+
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = "attachment; filename=Dealer_Purchases.xlsx"
+    wb.save(response)
+    return response

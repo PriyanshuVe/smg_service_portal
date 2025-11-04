@@ -1,0 +1,52 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Technician | SMG Portal</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+  <div class="container mt-4 mb-5">
+    <h3 class="text-center text-primary mb-3">Edit Technician Details</h3>
+
+    <form method="POST">
+      {% csrf_token %}
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label>Name</label>
+          <input type="text" name="name" value="{{ tech.name }}" class="form-control" required>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label>Mobile Number</label>
+          <input type="text" name="mobile_number" value="{{ tech.mobile_number }}" class="form-control" required>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label>Date of Joining</label>
+          <input type="date" name="date_of_joining" value="{{ tech.date_of_joining|date:'Y-m-d' }}" class="form-control" required>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label>Address</label>
+          <input type="text" name="address" value="{{ tech.address }}" class="form-control" required>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label>Trainings Done</label>
+          <input type="text" name="trainings_done" value="{{ tech.trainings_done }}" class="form-control">
+        </div>
+
+        <div class="col-md-6 mb-3 form-check mt-4">
+          <input type="checkbox" name="training_certification" class="form-check-input" {% if tech.training_certification %}checked{% endif %}>
+          <label class="form-check-label">Training Certification Received</label>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Save Changes</button>
+      <a href="{% url 'technician_list' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+  </div>
+</body>
+</html>
