@@ -260,3 +260,41 @@ class DealerToDealerPurchase(models.Model):
 
     class Meta:
         ordering = ['-id']
+        
+class FailedTagPart(models.Model):
+    dealer_name = models.CharField(max_length=100)
+    service_order_no = models.CharField(max_length=50)
+    warranty_type = models.CharField(max_length=50)  # Warranty / Out of warranty / Goodwill / Paid
+    model_no = models.CharField(max_length=50)
+    odo_reading = models.CharField(max_length=50, blank=True, null=True)
+    chassis_no = models.CharField(max_length=100)
+    customer_sale_date = models.DateField(blank=True, null=True)
+    part_description = models.CharField(max_length=200)
+    part_serial_number = models.CharField(max_length=100)
+    customer_complaint = models.TextField(blank=True, null=True)
+    diagnostic_details = models.TextField(blank=True, null=True)
+    remarks = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class WarrantyClaim(models.Model):
+    component = models.CharField(max_length=100)
+    material_code = models.CharField(max_length=100)
+    reason_for_replacement = models.TextField(blank=True, null=True)
+    last_service_details = models.TextField(blank=True, null=True)  # store last 5 service info in JSON
+    customer_signature = models.CharField(max_length=100, blank=True, null=True)
+    dealer_signature = models.CharField(max_length=100, blank=True, null=True)
+    technical_details = models.TextField(blank=True, null=True)  # charger/battery/motor tests
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class WarrantyPartPickup(models.Model):
+    collection_address = models.TextField()
+    delivery_address = models.TextField()
+    contact_person = models.CharField(max_length=100)
+    mobile_no = models.CharField(max_length=50)
+    boxes = models.IntegerField(default=0)
+    total_weight = models.CharField(max_length=50)
+    approx_weight = models.CharField(max_length=100)
+    material_details = models.TextField(blank=True, null=True)  # JSON for 10 rows (SO, Chassis, Model, Component, etc.)
+    created_at = models.DateTimeField(auto_now_add=True)

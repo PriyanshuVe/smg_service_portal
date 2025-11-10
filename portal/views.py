@@ -11,8 +11,12 @@ from django.utils.timezone import now
 from django.contrib import messages
 import gspread, json
 from oauth2client.service_account import ServiceAccountCredentials
+from .utils import render_to_pdf
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+from .models import WarrantyClaim
 import os
-from .models import TestRide, CustomerFeedback, Dealer, Quotation, PDIInspection, Technician, DealerToDealerPurchase, DealerToDealerSale
+from .models import TestRide, CustomerFeedback, Dealer, Quotation, PDIInspection, Technician, DealerToDealerPurchase, DealerToDealerSale, FailedTagPart, WarrantyClaim, WarrantyPartPickup
 from decimal import Decimal, InvalidOperation
 from django.db import IntegrityError, transaction
 import random, string, requests
@@ -605,10 +609,38 @@ def dealer_quotation(request):
         except Exception as e:
             print("⚠️ Quotation sheet sync error:", e)
 
-        return redirect('download_quotation_excel', quotation_id=quotation.id)
+        return redirect('quotation_pdf', quotation_id=quotation.id)
 
     quotations = Quotation.objects.filter(dealer=dealer).order_by('-created_at')
     return render(request, 'portal/dealer_quotation.html', {'dealer': dealer, 'quotations': quotations})
+
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+
+def quotation_pdf(request, quotation_id):
+    quotation = get_object_or_404(Quotation, id=quotation_id)
+
+    items = [
+        {"part": "Ex Showroom", "qty": 1, "price": quotation.ex_showroom, "amount": quotation.ex_showroom},
+        {"part": "RC", "qty": 1, "price": quotation.rc, "amount": quotation.rc},
+        {"part": "Insurance", "qty": 1, "price": quotation.insurance, "amount": quotation.insurance},
+        {"part": "Accessories", "qty": 1, "price": quotation.accessories, "amount": quotation.accessories},
+        {"part": "Hypothecation", "qty": 1, "price": quotation.hypothecation, "amount": quotation.hypothecation},
+        {"part": "Cow Cess", "qty": 1, "price": quotation.cow_cess, "amount": quotation.cow_cess},
+    ]
+
+    context = {
+        "items": items,
+        "total": quotation.total_amount,
+    }
+
+    template = get_template("portal/pdf/quotation_pdf.html")
+    html = template.render(context)
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="Quotation_{quotation.customer_name}.pdf"'
+    pisa.CreatePDF(html, dest=response)
+    return response
+
 
 
 def download_quotation_excel(request, quotation_id):
@@ -939,3 +971,91 @@ def export_purchases_excel(request):
     response["Content-Disposition"] = "attachment; filename=Dealer_Purchases.xlsx"
     wb.save(response)
     return response
+
+def warranty_home(request):
+    return render(request, "portal/warranty_home.html")
+
+def failed_tag_form(request):
+    if request.method == "POST":
+        FailedTagPart.objects.create(
+            dealer_name=request.POST.get("dealer_name"),
+            service_order_no=request.POST.get("service_order_no"),
+            warranty_type=request.POST.get("warranty_type"),
+            model_no=request.POST.get("model_no"),
+            odo_reading=request.POST.get("odo_reading"),
+            chassis_no=request.POST.get("chassis_no"),
+            customer_sale_date=request.POST.get("customer_sale_date"),
+            part_description=request.POST.get("part_description"),
+            part_serial_number=request.POST.get("part_serial_number"),
+            customer_complaint=request.POST.get("customer_complaint"),
+            diagnostic_details=request.POST.get("diagnostic_details"),
+            remarks=request.POST.get("remarks")
+        )
+        messages.success(request, "Failed Tag Part form saved successfully!")
+        return redirect('failed_tag_form')
+    return render(request, "portal/failed_tag_form.html")
+
+def warranty_claim_form(request):
+    if request.method == "POST":
+        data = {
+            "component": request.POST.get("component"),
+            "material_code": request.POST.get("material_code"),
+            "reason_for_replacement": request.POST.get("reason_for_replacement"),
+            "last_service_details": json.dumps({
+                "service1": request.POST.get("service1"),
+                "service2": request.POST.get("service2"),
+                "service3": request.POST.get("service3"),
+                "service4": request.POST.get("service4"),
+                "service5": request.POST.get("service5"),
+            }),
+            "technical_details": request.POST.get("technical_details"),
+            "customer_signature": request.POST.get("customer_signature"),
+            "dealer_signature": request.POST.get("dealer_signature"),
+        }
+        WarrantyClaim.objects.create(**data)
+        messages.success(request, "Warranty Claim form saved successfully!")
+        return redirect('warranty_claim_form')
+
+    return render(request, "portal/warranty_claim_form.html")
+
+def warranty_pickup_form(request):
+    if request.method == "POST":
+        materials = []
+        for i in range(1, 11):
+            row = {
+                "so_number": request.POST.get(f"so_{i}"),
+                "chassis_no": request.POST.get(f"chassis_{i}"),
+                "model": request.POST.get(f"model_{i}"),
+                "component_name": request.POST.get(f"component_{i}"),
+                "serial_no": request.POST.get(f"serial_{i}"),
+                "vendor": request.POST.get(f"vendor_{i}"),
+                "amount": request.POST.get(f"amount_{i}")
+            }
+            if any(row.values()):
+                materials.append(row)
+
+        WarrantyPartPickup.objects.create(
+            collection_address=request.POST.get("collection_address"),
+            delivery_address=request.POST.get("delivery_address"),
+            contact_person=request.POST.get("contact_person"),
+            mobile_no=request.POST.get("mobile_no"),
+            boxes=request.POST.get("boxes"),
+            total_weight=request.POST.get("total_weight"),
+            approx_weight=request.POST.get("approx_weight"),
+            material_details=json.dumps(materials)
+        )
+        messages.success(request, "Warranty Part Pickup form saved successfully!")
+        return redirect('warranty_pickup_form')
+
+    return render(request, "portal/warranty_pickup_form.html")
+
+def warranty_claim_pdf(request, pk):
+    claim = WarrantyClaim.objects.get(pk=pk)
+    pdf = render_to_pdf('portal/pdf/warranty_claim_pdf.html', {'claim': claim})
+    return pdf
+
+def warranty_pickup_pdf(request, pk):
+    pickup = WarrantyPartPickup.objects.get(pk=pk)
+    materials = json.loads(pickup.material_details)
+    pdf = render_to_pdf('portal/pdf/warranty_pickup_pdf.html', {'pickup': pickup, 'materials': materials})
+    return pdf

@@ -1,0 +1,45 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Failed Tag Part Form | SMG Portal</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+<div class="container mt-4 mb-5">
+  <h3 class="text-center text-danger mb-3">Failed Tag Part Form</h3>
+
+  <form method="POST" class="border p-3 bg-white rounded shadow-sm">
+    {% csrf_token %}
+    <div class="row">
+      <div class="col-md-6 mb-3"><input type="text" name="dealer_name" placeholder="Dealer Name" class="form-control" required></div>
+      <div class="col-md-6 mb-3"><input type="text" name="service_order_no" placeholder="Service Order No" class="form-control"></div>
+      <div class="col-md-6 mb-3"><input type="text" name="warranty_type" placeholder="Warranty / Out of warranty / Goodwill / Paid" class="form-control"></div>
+      <div class="col-md-6 mb-3"><input type="text" name="model_no" placeholder="Model No" class="form-control"></div>
+      <div class="col-md-6 mb-3"><input type="text" name="odo_reading" placeholder="ODO Reading" class="form-control"></div>
+      <div class="col-md-6 mb-3"><input type="text" name="chassis_no" placeholder="Chassis No" class="form-control"></div>
+      <div class="col-md-6 mb-3"><input type="date" name="customer_sale_date" class="form-control"></div>
+      <div class="col-md-6 mb-3"><input type="text" name="part_description" placeholder="Part Description" class="form-control"></div>
+      <div class="col-md-6 mb-3"><input type="text" name="part_serial_number" placeholder="Part Serial Number / Batch Code" class="form-control"></div>
+    </div>
+
+    <div class="mb-3">
+      <label>Customer Complaint</label>
+      <textarea name="customer_complaint" class="form-control" rows="2"></textarea>
+    </div>
+    <div class="mb-3">
+      <label>Diagnostic Details</label>
+      <textarea name="diagnostic_details" class="form-control" rows="2"></textarea>
+    </div>
+    <div class="mb-3">
+      <label>Remarks</label>
+      <textarea name="remarks" class="form-control" rows="2"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Form</button>
+    <a href="{% url 'warranty_home' %}" class="btn btn-secondary">Back</a>
+  </form>
+</div>
+</body>
+</html>

@@ -1,0 +1,55 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Warranty Part Pick-Up | SMG Portal</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+<div class="container mt-4 mb-5">
+  <h3 class="text-center text-success mb-3">Warranty Part Pick-Up Form</h3>
+  <form method="POST" class="border p-3 bg-white rounded shadow-sm">
+    {% csrf_token %}
+    <h5 class="text-primary mb-2">Pickup Details</h5>
+    <textarea name="collection_address" placeholder="Collection Address with PIN code" class="form-control mb-2" rows="2"></textarea>
+    <textarea name="delivery_address" placeholder="Delivery Address (Warranty Dept.)" class="form-control mb-2" rows="2"></textarea>
+
+    <div class="row">
+      <div class="col-md-6 mb-3"><input type="text" name="contact_person" placeholder="Contact Person" class="form-control"></div>
+      <div class="col-md-6 mb-3"><input type="text" name="mobile_no" placeholder="Mobile Number" class="form-control"></div>
+      <div class="col-md-4 mb-3"><input type="number" name="boxes" placeholder="No. of Boxes" class="form-control"></div>
+      <div class="col-md-4 mb-3"><input type="text" name="total_weight" placeholder="Total Weight" class="form-control"></div>
+      <div class="col-md-4 mb-3"><input type="text" name="approx_weight" placeholder="Approx Weight" class="form-control"></div>
+    </div>
+
+    <h5 class="text-primary mt-4 mb-2">Material Details (Up to 10 Items)</h5>
+    <table class="table table-bordered table-sm">
+      <thead class="table-light">
+        <tr>
+          <th>S.No</th><th>SO Number</th><th>Chassis No</th><th>Model</th>
+          <th>Component</th><th>Serial No</th><th>Vendor</th><th>Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for i in "12345678910" %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td><input type="text" name="so_{{ i }}" class="form-control"></td>
+          <td><input type="text" name="chassis_{{ i }}" class="form-control"></td>
+          <td><input type="text" name="model_{{ i }}" class="form-control"></td>
+          <td><input type="text" name="component_{{ i }}" class="form-control"></td>
+          <td><input type="text" name="serial_{{ i }}" class="form-control"></td>
+          <td><input type="text" name="vendor_{{ i }}" class="form-control"></td>
+          <td><input type="text" name="amount_{{ i }}" class="form-control"></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <button type="submit" class="btn btn-success">Save Form</button>
+    <a href="{% url 'warranty_home' %}" class="btn btn-secondary">Back</a>
+  </form>
+</div>
+</body>
+</html>

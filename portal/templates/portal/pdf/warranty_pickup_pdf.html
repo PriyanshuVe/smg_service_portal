@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Warranty Part Pick-Up</title>
+<style>
+body { font-family: Arial, sans-serif; font-size: 12px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { border: 1px solid #555; padding: 5px; }
+</style>
+</head>
+<body>
+<h2>Warranty Part Pick-Up Form</h2>
+<p><b>Collection Address:</b> {{ pickup.collection_address }}</p>
+<p><b>Delivery Address:</b> {{ pickup.delivery_address }}</p>
+<p><b>Contact Person:</b> {{ pickup.contact_person }}</p>
+<p><b>Mobile:</b> {{ pickup.mobile_no }}</p>
+<p><b>Total Weight:</b> {{ pickup.total_weight }}</p>
+<hr>
+<h4>Material Details</h4>
+<table>
+<tr>
+<th>S.No</th><th>SO Number</th><th>Chassis</th><th>Model</th>
+<th>Component</th><th>Serial No</th><th>Vendor</th><th>Amount</th>
+</tr>
+{% for m in materials %}
+<tr>
+<td>{{ forloop.counter }}</td>
+<td>{{ m.so_number }}</td>
+<td>{{ m.chassis_no }}</td>
+<td>{{ m.model }}</td>
+<td>{{ m.component_name }}</td>
+<td>{{ m.serial_no }}</td>
+<td>{{ m.vendor }}</td>
+<td>{{ m.amount }}</td>
+</tr>
+{% endfor %}
+</table>
+</body>
+</html>

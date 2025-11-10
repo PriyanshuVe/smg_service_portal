@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Warranty Claim Form PDF</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #555; padding: 6px; }
+    h2 { text-align: center; }
+  </style>
+</head>
+<body>
+  <h2>Warranty Claim Form</h2>
+  <p><b>Component:</b> {{ claim.component }}</p>
+  <p><b>Material Code:</b> {{ claim.material_code }}</p>
+  <p><b>Reason for Replacement:</b><br>{{ claim.reason_for_replacement }}</p>
+  <hr>
+  <h4>Technical Details</h4>
+  <p>{{ claim.technical_details }}</p>
+  <hr>
+  <p><b>Customer Signature:</b> {{ claim.customer_signature }}</p>
+  <p><b>Dealer Signature:</b> {{ claim.dealer_signature }}</p>
+</body>
+</html>

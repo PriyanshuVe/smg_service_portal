@@ -57,5 +57,12 @@ urlpatterns = [
     path('dealer-purchase/add/', views.dealer_purchase_add, name='dealer_purchase_add'),
     path('dealer-purchase/delete/<int:id>/', views.delete_dealer_purchase, name='delete_dealer_purchase'),
     path('dealer-purchase/export/', views.export_purchases_excel, name='export_purchases_excel'),
+    path('warranty/', views.warranty_home, name='warranty_home'),
+    path('warranty/failed-tag/', views.failed_tag_form, name='failed_tag_form'),
+    path('warranty/claim/', views.warranty_claim_form, name='warranty_claim_form'),
+    path('warranty/pickup/', views.warranty_pickup_form, name='warranty_pickup_form'),
+    path('warranty/claim/pdf/<int:pk>/', views.warranty_claim_pdf, name='warranty_claim_pdf'),
+    path('warranty/pickup/pdf/<int:pk>/', views.warranty_pickup_pdf, name='warranty_pickup_pdf'),
+    path('quotation/<int:quotation_id>/pdf/', views.quotation_pdf, name='quotation_pdf'),
 ]
 
