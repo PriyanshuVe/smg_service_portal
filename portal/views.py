@@ -793,7 +793,6 @@ def pdi_inspection_form(request):
 
         # Save in DB
         PDIInspection.objects.create(
-            dealer=dealer_fk if 'dealer' in [f.name for f in PDIInspection._meta.get_fields()] else None,
             dealer_name=request.POST.get('dealer_name') or dealer_name,
             location=request.POST.get('location', ''),
             dealer_code=request.POST.get('dealer_code'),
@@ -844,19 +843,15 @@ def pdi_inspection_form(request):
 
 def pdi_list(request):
     import json
+
     dealer_id = request.session.get('dealer_id')
     if not dealer_id:
         return redirect('dealer_login')
 
-    # identify dealer
     dealer = Dealer.objects.get(dealer_id=dealer_id)
 
-    # get PDI records only for this dealer
-    rows = PDIInspection.objects.filter(dealer=dealer).order_by('-date', '-id') \
-           if 'dealer' in [f.name for f in PDIInspection._meta.get_fields()] \
-           else PDIInspection.objects.filter(dealer_name=dealer.name).order_by('-date', '-id')
+    rows = PDIInspection.objects.filter(dealer_name=dealer.name).order_by('-id')
 
-    # helper to calculate status (OK / NG)
     def status(row):
         try:
             data = json.loads(row.results or "{}")
