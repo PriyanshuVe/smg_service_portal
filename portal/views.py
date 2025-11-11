@@ -513,9 +513,24 @@ def test_ride_form(request):
         TestRide.objects.create(**data)
 
         # ✅ Push to Google Sheet (Apps Script endpoint)
-        GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxIz5DSv1SQS0CNzzcvZo8nPyoDLpv6cgdjpjnDlv-BLo4MVtHdHCe01kmPg5A7xy8g/exec"  # replace with your actual script URL
+        GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxIz5DSv1SQS0CNzzcvZo8nPyoDLpv6cgdjpjnDlv-BLo4MVtHdHCe01kmPg5A7xy8g/exec"
+
+        # ✅ Attach dealer identity
+        dealer_id = request.session.get('dealer_id')
+        dealer_name = ""
+        dealer_city = ""
+        if dealer_id:
+            try:
+                d = Dealer.objects.get(dealer_id=dealer_id)
+                dealer_name = getattr(d, "name", "") or getattr(d, "dealer_name", "")
+                dealer_city = getattr(d, "city", "")
+            except Dealer.DoesNotExist:
+                pass
+
+        payload = {**data, "dealer_id": dealer_id or "", "dealer_name": dealer_name, "dealer_city": dealer_city}
+
         try:
-            response = requests.post(GOOGLE_SCRIPT_URL, json=data)
+            response = requests.post(GOOGLE_SCRIPT_URL, json=payload)
             if response.status_code == 200:
                 messages.success(request, "Test ride data saved and synced to Google Sheet successfully!")
             else:
@@ -539,12 +554,29 @@ def customer_feedback_form(request):
 
         CustomerFeedback.objects.create(**data)
          # Push to Google Sheets
+                # ✅ Push to Google Sheet (Apps Script endpoint)
+        GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxF_HpPGAdXYK0-sdJ5mFogeLTCeNG5Kt68sRnFqtKvFyWvswYE3iMaaYliqLd0Y1c/exec"
+
+        # ✅ Attach dealer identity
+        dealer_id = request.session.get('dealer_id')
+        dealer_name = ""
+        dealer_city = ""
+        if dealer_id:
+            try:
+                d = Dealer.objects.get(dealer_id=dealer_id)
+                dealer_name = getattr(d, "name", "") or getattr(d, "dealer_name", "")
+                dealer_city = getattr(d, "city", "")
+            except Dealer.DoesNotExist:
+                pass
+
+        payload = {**data, "dealer_id": dealer_id or "", "dealer_name": dealer_name, "dealer_city": dealer_city}
+
         try:
-            response = requests.post("https://script.google.com/macros/s/AKfycbxF_HpPGAdXYK0-sdJ5mFogeLTCeNG5Kt68sRnFqtKvFyWvswYE3iMaaYliqLd0Y1c/exec", json=data)
+            response = requests.post(GOOGLE_SCRIPT_URL, json=payload)
             if response.status_code == 200:
                 messages.success(request, "Feedback submitted successfully and synced to Google Sheets!")
             else:
-                messages.warning(request, "Feedback saved locally but failed to sync with Google Sheet.")
+                messages.warning(request, "Feedback saved locally but Google Sheet sync failed.")
         except Exception as e:
             messages.warning(request, f"Feedback saved locally. Sheet sync error: {e}")
 
@@ -593,21 +625,42 @@ def dealer_quotation(request):
         )
         quotation.save()
 
-        # ✅ Optional Google Sheet sync
+        # ✅ Google Sheet Sync with Dealer Identity
+        GOOGLE_QUOTATION_SHEET = "https://script.google.com/macros/s/AKfycbyjrhV1ExbfapB49v1rvG-vYX1WignWAUrk93dp2jBa8iCUmJdRzHwZtRpHjl1jmczO/exec"
+
+        dealer_id = request.session.get('dealer_id')
+        dealer_name = ""
+        dealer_city = ""
+
+        if dealer_id:
+            try:
+                d = Dealer.objects.get(dealer_id=dealer_id)
+                dealer_name = getattr(d, "name", "") or getattr(d, "dealer_name", "")
+                dealer_city = getattr(d, "city", "")
+            except Dealer.DoesNotExist:
+                pass
+
+        payload = {
+            "dealer_id": dealer_id or "",
+            "dealer_name": dealer_name,
+            "dealer_city": dealer_city,
+            "customer_name": quotation.customer_name,
+            "mobile_no": quotation.mobile_no,
+            "city": quotation.city,
+            "date": str(quotation.date_of_quotation),
+            "ex_showroom": float(quotation.ex_showroom),
+            "rc": float(quotation.rc),
+            "insurance": float(quotation.insurance),
+            "accessories": float(quotation.accessories),
+            "hypothecation": float(quotation.hypothecation),
+            "cow_cess": float(quotation.cow_cess),
+            "total_amount": float(quotation.total_amount),
+        }
+
         try:
-            GOOGLE_QUOTATION_SHEET = "https://script.google.com/macros/s/AKfycbyjrhV1ExbfapB49v1rvG-vYX1WignWAUrk93dp2jBa8iCUmJdRzHwZtRpHjl1jmczO/exec"
-            payload = {
-                "Dealer": dealer.dealer_name if hasattr(dealer, "dealer_name") else "Unknown Dealer",
-                "Customer": quotation.customer_name,
-                "Mobile": quotation.mobile_no,
-                "City": quotation.city,
-                "Date": str(quotation.date_of_quotation),
-                "Total": float(quotation.total_amount)
-            }
-            response = requests.post(GOOGLE_QUOTATION_SHEET, json=payload)
-            print("✅ Quotation synced:", response.status_code)
+            requests.post(GOOGLE_QUOTATION_SHEET, json=payload, timeout=10)
         except Exception as e:
-            print("⚠️ Quotation sheet sync error:", e)
+            print("⚠️ Quotation Sheet Sync Error:", e)
 
         return redirect('quotation_pdf', quotation_id=quotation.id)
 
@@ -672,8 +725,8 @@ def download_quotation_excel(request, quotation_id):
     wb.save(response)
     return response
 
+
 def pdi_inspection_form(request):
-    # Full checklist (as per official PDI sheet)
     checklist_items = [
         "Lockset ON/OFF function",
         "Seat lock and Side lock function",
@@ -704,43 +757,88 @@ def pdi_inspection_form(request):
     ]
 
     if request.method == "POST":
-        # Collect general data
-        general_data = {
-            'dealer_name': request.POST.get('dealer_name'),
-            'location': request.POST.get('location'),
-            'dealer_code': request.POST.get('dealer_code'),
-            'model_name': request.POST.get('model_name'),
-            'date': request.POST.get('date'),
-            'vin': request.POST.get('vin'),
-            'battery_no': request.POST.get('battery_no'),
-            'charger_no': request.POST.get('charger_no'),
-            'motor_no': request.POST.get('motor_no'),
-            'controller_no': request.POST.get('controller_no'),
-            'remarks': request.POST.get('remarks'),
-        }
+        # Build results dict with safe defaults
+        results = {}
+        missing = []
+        for idx, _ in enumerate(checklist_items, start=1):
+            key = f"result_{idx}"
+            val = request.POST.get(key)
+            if val not in ("OK", "NG"):
+                missing.append(idx)
+            results[key] = val or "NG"
 
-        # Collect OK/NG results for each point
-        result_data = {item: request.POST.get(f"result_{i+1}") for i, item in enumerate(checklist_items)}
-        general_data["results"] = json.dumps(result_data)
+        if missing:
+            messages.error(
+                request,
+                f"Please select OK/NG for all items. Missing rows: {', '.join(map(str, missing))}"
+            )
+            return render(request, "portal/pdi_inspection_form.html",
+                          {"checklist": enumerate(checklist_items, start=1)})
 
-        # Save in database
-        PDIInspection.objects.create(**general_data)
+        # Identify current dealer (from session)
+        dealer_fk = None
+        dealer_id = request.session.get('dealer_id')
+        dealer_name = ""
+        dealer_city = ""
+        if dealer_id:
+            try:
+                dealer_fk = Dealer.objects.get(dealer_id=dealer_id)
+                dealer_name = getattr(dealer_fk, "name", "") or getattr(dealer_fk, "dealer_name", "")
+                dealer_city = getattr(dealer_fk, "city", "")
+            except Dealer.DoesNotExist:
+                pass
 
-        # ✅ Push to Google Sheet (keep your real Apps Script link)
-        GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxxVxtarpCF__wFfgoiE57wuVjZyetksdcCvADmnENjjokWAGZQ1ZWYkQmD9EQ1DKr1jQ/exec"
+        # Save in DB
+        PDIInspection.objects.create(
+            dealer=dealer_fk if 'dealer' in [f.name for f in PDIInspection._meta.get_fields()] else None,
+            dealer_name=request.POST.get('dealer_name') or dealer_name,
+            location=request.POST.get('location', ''),
+            dealer_code=request.POST.get('dealer_code'),
+            model_name=request.POST.get('model_name'),
+            date=request.POST.get('date'),
+            vin=request.POST.get('vin'),
+            battery_no=request.POST.get('battery_no'),
+            charger_no=request.POST.get('charger_no'),
+            motor_no=request.POST.get('motor_no'),
+            controller_no=request.POST.get('controller_no', ''),
+            results=json.dumps(results),
+            remarks=request.POST.get('remarks'),
+        )
+
+        # Push to Google Sheet (with dealer identity for filtering)
         try:
-            response = requests.post(GOOGLE_SCRIPT_URL, json=general_data)
-            if response.status_code == 200:
-                messages.success(request, "✅ PDI inspection saved and synced to Google Sheet!")
-            else:
-                messages.warning(request, "⚠️ PDI saved locally but failed to sync with Google Sheet.")
+            GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxxVxtarpCF__wFfgoiE57wuVjZyetksdcCvADmnENjjokWAGZQ1ZWYkQmD9EQ1DKr1jQ/exec"
+            payload = {
+                "dealer_id": dealer_id or "",
+                "dealer_name": request.POST.get('dealer_name') or dealer_name,
+                "dealer_city": dealer_city,
+                "dealer_code": request.POST.get('dealer_code'),
+                "model_name": request.POST.get('model_name'),
+                "date": request.POST.get('date'),
+                "vin": request.POST.get('vin'),
+                "battery_no": request.POST.get('battery_no'),
+                "charger_no": request.POST.get('charger_no'),
+                "motor_no": request.POST.get('motor_no'),
+                "controller_no": request.POST.get('controller_no', ''),
+                "results": results,
+                "remarks": request.POST.get('remarks', ''),
+            }
+            r = requests.post(GOOGLE_SCRIPT_URL, json=payload, timeout=12)
+            if r.status_code != 200:
+                messages.warning(request, "PDI saved. Google Sheet sync failed.")
         except Exception as e:
-            messages.warning(request, f"⚠️ Saved locally. Sheet sync error: {e}")
+            messages.warning(request, f"PDI saved. Sheet sync error: {e}")
 
+        messages.success(request, "PDI inspection submitted successfully!")
         return redirect('pdi_inspection_form')
 
-    # render form with checklist
-    return render(request, "portal/pdi_inspection_form.html", {"checklist": enumerate(checklist_items, start=1)})
+    # GET
+    return render(
+        request,
+        "portal/pdi_inspection_form.html",
+        {"checklist": enumerate(checklist_items, start=1)}
+    )
+
 
 
 def technician_list(request):
@@ -827,10 +925,25 @@ def dealer_sale_add(request):
         # ✅ Save locally
         DealerToDealerSale.objects.create(**data)
 
-        # ✅ Google Sheet Integration
-        GOOGLE_SHEET_SALE = "https://script.google.com/macros/s/AKfycbyKkJTIGyorpE5XWKa17elvHDiXDCslN3tiOftL-Ds6y1ZIjXpqxrQqB7Lgcuece5O7pg/exec"  # Replace with your sheet link
+        # ✅ Google Sheet Integration with Dealer Identity
+        GOOGLE_SHEET_SALE = "https://script.google.com/macros/s/AKfycbyKkJTIGyorpE5XWKa17elvHDiXDCslN3tiOftL-Ds6y1ZIjXpqxrQqB7Lgcuece5O7pg/exec"
+
+        dealer_id = request.session.get('dealer_id')
+        dealer_name = ""
+        dealer_city = ""
+
+        if dealer_id:
+            try:
+                d = Dealer.objects.get(dealer_id=dealer_id)
+                dealer_name = getattr(d, "name", "") or getattr(d, "dealer_name", "")
+                dealer_city = getattr(d, "city", "")
+            except Dealer.DoesNotExist:
+                pass
+
+        payload = {**data, "dealer_id": dealer_id or "", "dealer_name": dealer_name, "dealer_city": dealer_city}
+
         try:
-            response = requests.post(GOOGLE_SHEET_SALE, json=data)
+            response = requests.post(GOOGLE_SHEET_SALE, json=payload)
             if response.status_code == 200:
                 messages.success(request, "✅ Dealer Sale saved and synced to Google Sheet!")
             else:
@@ -890,10 +1003,25 @@ def dealer_purchase_add(request):
         # ✅ Save locally
         DealerToDealerPurchase.objects.create(**data)
 
-        # ✅ Google Sheet Integration
-        GOOGLE_SHEET_PURCHASE = "https://script.google.com/macros/s/AKfycbw4TQ2G4QCyvuo5lF66GYxU7VCcV_qTwQ0ofAjy87IoxDfJzmdbqwoiWRkv2cnX3_wh/exec"  # Replace with your sheet link
+        # ✅ Google Sheet Integration with Dealer Identity
+        GOOGLE_SHEET_PURCHASE = "https://script.google.com/macros/s/AKfycbw4TQ2G4QCyvuo5lF66GYxU7VCcV_qTwQ0ofAjy87IoxDfJzmdbqwoiWRkv2cnX3_wh/exec"
+
+        dealer_id = request.session.get('dealer_id')
+        dealer_name = ""
+        dealer_city = ""
+
+        if dealer_id:
+            try:
+                d = Dealer.objects.get(dealer_id=dealer_id)
+                dealer_name = getattr(d, "name", "") or getattr(d, "dealer_name", "")
+                dealer_city = getattr(d, "city", "")
+            except Dealer.DoesNotExist:
+                pass
+
+        payload = {**data, "dealer_id": dealer_id or "", "dealer_name": dealer_name, "dealer_city": dealer_city}
+
         try:
-            response = requests.post(GOOGLE_SHEET_PURCHASE, json=data)
+            response = requests.post(GOOGLE_SHEET_PURCHASE, json=payload)
             if response.status_code == 200:
                 messages.success(request, "✅ Dealer Purchase saved and synced to Google Sheet!")
             else:

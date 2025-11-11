@@ -162,7 +162,7 @@ class PDIInspection(models.Model):
     charger_no = models.CharField(max_length=50)
     motor_no = models.CharField(max_length=50)
     controller_no = models.CharField(max_length=50)
-    results = models.TextField(blank=True, null=True)  # stores JSON OK/NG answers
+    results = models.TextField(default='{}')  # stores JSON OK/NG answers safely
     remarks = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
