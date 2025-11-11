@@ -843,6 +843,7 @@ def pdi_inspection_form(request):
     )
 
 def pdi_list(request):
+    import json
     dealer_id = request.session.get('dealer_id')
     if not dealer_id:
         return redirect('dealer_login')

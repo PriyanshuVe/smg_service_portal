@@ -152,6 +152,7 @@ class Quotation(models.Model):
         return f"Quotation for {self.customer_name} ({self.date_of_quotation})"
 
 class PDIInspection(models.Model):
+    dealer = models.ForeignKey('Dealer', on_delete=models.SET_NULL, null=True, blank=True)
     dealer_name = models.CharField(max_length=100)
     location = models.CharField(max_length=100)
     dealer_code = models.CharField(max_length=50)
