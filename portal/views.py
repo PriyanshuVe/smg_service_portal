@@ -851,7 +851,7 @@ def pdi_list(request):
 
     dealer = Dealer.objects.get(dealer_id=dealer_id)
 
-    # ✅ Filter correctly using ForeignKey
+    # ✅ Filter PDI by Dealer ForeignKey
     rows = PDIInspection.objects.filter(dealer=dealer).order_by('-id')
 
     def status(row):
