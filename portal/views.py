@@ -9,6 +9,9 @@ from django.utils import timezone
 from openpyxl import Workbook
 from django.utils.timezone import now
 from django.contrib import messages
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+import json
 import gspread, json
 from oauth2client.service_account import ServiceAccountCredentials
 from .utils import render_to_pdf
@@ -839,7 +842,39 @@ def pdi_inspection_form(request):
         {"checklist": enumerate(checklist_items, start=1)}
     )
 
+def pdi_list(request):
+    dealer_id = request.session.get('dealer_id')
+    if not dealer_id:
+        return redirect('dealer_login')
 
+    # identify dealer
+    dealer = Dealer.objects.get(dealer_id=dealer_id)
+
+    # get PDI records only for this dealer
+    rows = PDIInspection.objects.filter(dealer=dealer).order_by('-date', '-id') \
+           if 'dealer' in [f.name for f in PDIInspection._meta.get_fields()] \
+           else PDIInspection.objects.filter(dealer_name=dealer.name).order_by('-date', '-id')
+
+    # helper to calculate status (OK / NG)
+    def status(row):
+        try:
+            data = json.loads(row.results or "{}")
+            return "NG" if any(v == "NG" for v in data.values()) else "OK"
+        except:
+            return "OK"
+
+    return render(request, "portal/pdi_list.html", {"rows": rows, "status": status})
+
+def my_service_records(request):
+    dealer_id = request.session.get('dealer_id')
+    if not dealer_id:
+        return redirect('dealer_login')
+
+    dealer = Dealer.objects.get(dealer_id=dealer_id)
+
+    records = ServiceRecord.objects.filter(dealer=dealer).order_by('-created_at')
+
+    return render(request, "portal/my_service_records.html", {"records": records})
 
 def technician_list(request):
     if request.method == "POST":
