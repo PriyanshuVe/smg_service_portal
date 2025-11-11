@@ -793,6 +793,7 @@ def pdi_inspection_form(request):
 
         # Save in DB
         PDIInspection.objects.create(
+            dealer=dealer_fk,   # ✅ NOW VALID because model has dealer FK
             dealer_name=request.POST.get('dealer_name') or dealer_name,
             location=request.POST.get('location', ''),
             dealer_code=request.POST.get('dealer_code'),
@@ -850,7 +851,8 @@ def pdi_list(request):
 
     dealer = Dealer.objects.get(dealer_id=dealer_id)
 
-    rows = PDIInspection.objects.filter(dealer_name=dealer.name).order_by('-id')
+    # ✅ Filter correctly using ForeignKey
+    rows = PDIInspection.objects.filter(dealer=dealer).order_by('-id')
 
     def status(row):
         try:
@@ -860,6 +862,7 @@ def pdi_list(request):
             return "OK"
 
     return render(request, "portal/pdi_list.html", {"rows": rows, "status": status})
+
 
 def my_service_records(request):
     dealer_id = request.session.get('dealer_id')
