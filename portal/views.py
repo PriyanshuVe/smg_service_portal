@@ -842,26 +842,39 @@ def pdi_inspection_form(request):
         {"checklist": enumerate(checklist_items, start=1)}
     )
 
+
 def pdi_list(request):
     import json
-
     dealer_id = request.session.get('dealer_id')
     if not dealer_id:
         return redirect('dealer_login')
 
-    dealer = Dealer.objects.get(dealer_id=dealer_id)
+    try:
+        dealer = Dealer.objects.get(dealer_id=dealer_id)
+    except Dealer.DoesNotExist:
+        messages.error(request, "Dealer not found.")
+        return redirect('dealer_login')
 
-    # ✅ Filter PDI by Dealer ForeignKey
+    # ✅ Only show records properly linked to this dealer
     rows = PDIInspection.objects.filter(dealer=dealer).order_by('-id')
 
-    def status(row):
+    pdi_data = []
+    for r in rows:
         try:
-            data = json.loads(row.results or "{}")
-            return "NG" if any(v == "NG" for v in data.values()) else "OK"
-        except:
-            return "OK"
+            data = json.loads(r.results or "{}")
+            row_status = "NG" if any(v == "NG" for v in data.values()) else "OK"
+        except Exception:
+            row_status = "OK"
 
-    return render(request, "portal/pdi_list.html", {"rows": rows, "status": status})
+        pdi_data.append({
+            "date": r.date,
+            "model_name": r.model_name,
+            "vin": r.vin,
+            "status": row_status,
+        })
+
+    return render(request, "portal/pdi_list.html", {"pdi_data": pdi_data})
+
 
 
 def my_service_records(request):
