@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+<title>Failed Tag Records</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+
+<div class="container mt-4">
+  <h3 class="text-danger mb-3">Failed Tag Records</h3>
+
+  <table class="table table-bordered bg-white">
+    <thead class="table-light">
+      <tr>
+        <th>Date</th>
+        <th>Model</th>
+        <th>Chassis</th>
+        <th>PDF</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.created_at|date:"d-m-Y" }}</td>
+        <td>{{ r.model_no }}</td>
+        <td>{{ r.chassis_no }}</td>
+        <td>
+          <a class="btn btn-primary btn-sm" href="{% url 'failed_tag_pdf' r.id %}">PDF</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-center text-muted">No records found</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+</div>
+</body>
+</html>

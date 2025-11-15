@@ -263,6 +263,9 @@ class DealerToDealerPurchase(models.Model):
         ordering = ['-id']
         
 class FailedTagPart(models.Model):
+    dealer = models.ForeignKey('Dealer', on_delete=models.SET_NULL, null=True, blank=True)
+    dealer_id_val = models.CharField(max_length=50, blank=True, null=True)
+    dealer_name_val = models.CharField(max_length=100, blank=True, null=True)
     dealer_name = models.CharField(max_length=100)
     service_order_no = models.CharField(max_length=50)
     warranty_type = models.CharField(max_length=50)  # Warranty / Out of warranty / Goodwill / Paid
@@ -279,6 +282,9 @@ class FailedTagPart(models.Model):
 
 
 class WarrantyClaim(models.Model):
+    dealer = models.ForeignKey('Dealer', on_delete=models.SET_NULL, null=True, blank=True)
+    dealer_id_val = models.CharField(max_length=50, blank=True, null=True)
+    dealer_name_val = models.CharField(max_length=100, blank=True, null=True)
     component = models.CharField(max_length=100)
     material_code = models.CharField(max_length=100)
     reason_for_replacement = models.TextField(blank=True, null=True)
@@ -290,6 +296,9 @@ class WarrantyClaim(models.Model):
 
 
 class WarrantyPartPickup(models.Model):
+    dealer = models.ForeignKey('Dealer', on_delete=models.SET_NULL, null=True, blank=True)
+    dealer_id_val = models.CharField(max_length=50, blank=True, null=True)
+    dealer_name_val = models.CharField(max_length=100, blank=True, null=True)
     collection_address = models.TextField()
     delivery_address = models.TextField()
     contact_person = models.CharField(max_length=100)

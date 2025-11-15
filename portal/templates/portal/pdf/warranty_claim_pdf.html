@@ -12,6 +12,12 @@
 </head>
 <body>
   <h2>Warranty Claim Form</h2>
+  <p><b>Dealer ID:</b> {{ claim.dealer_id_val }}</p>
+  <p><b>Dealer Name:</b> {{ claim.dealer_name_val }}</p>
+  <p><b>Date:</b> {{ claim.created_at|date:"d-m-Y" }}</p>
+
+  <hr>
+  
   <p><b>Component:</b> {{ claim.component }}</p>
   <p><b>Material Code:</b> {{ claim.material_code }}</p>
   <p><b>Reason for Replacement:</b><br>{{ claim.reason_for_replacement }}</p>

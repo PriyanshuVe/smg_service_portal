@@ -11,6 +11,12 @@ th, td { border: 1px solid #555; padding: 5px; }
 </head>
 <body>
 <h2>Warranty Part Pick-Up Form</h2>
+<p><b>Dealer ID:</b> {{ pickup.dealer_id_val }}</p>
+<p><b>Dealer Name:</b> {{ pickup.dealer_name_val }}</p>
+<p><b>Date:</b> {{ pickup.created_at|date:"d-m-Y" }}</p>
+
+<hr>
+
 <p><b>Collection Address:</b> {{ pickup.collection_address }}</p>
 <p><b>Delivery Address:</b> {{ pickup.delivery_address }}</p>
 <p><b>Contact Person:</b> {{ pickup.contact_person }}</p>

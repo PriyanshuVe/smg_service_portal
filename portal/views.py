@@ -1151,8 +1151,22 @@ def warranty_home(request):
     return render(request, "portal/warranty_home.html")
 
 def failed_tag_form(request):
+    dealer_fk = None
+    dealer_id = request.session.get("dealer_id")
+    dealer_name = ""
+
+    if dealer_id:
+        try:
+            dealer_fk = Dealer.objects.get(dealer_id=dealer_id)
+            dealer_name = dealer_fk.name
+        except Dealer.DoesNotExist:
+            pass
+        
     if request.method == "POST":
         FailedTagPart.objects.create(
+            dealer=dealer_fk,
+            dealer_id_val=dealer_id,
+            dealer_name_val=dealer_name,
             dealer_name=request.POST.get("dealer_name"),
             service_order_no=request.POST.get("service_order_no"),
             warranty_type=request.POST.get("warranty_type"),
@@ -1166,13 +1180,62 @@ def failed_tag_form(request):
             diagnostic_details=request.POST.get("diagnostic_details"),
             remarks=request.POST.get("remarks")
         )
+        # GOOGLE SHEET SYNC
+        import requests
+
+        GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzmOuIfybIkcQM8UBfy2wNetXe15Ecdnvh9eJIJ9wVW4jxYRJs4Nrm_v3ib0EZTlEdsCg/exec"
+
+        payload = {
+            "dealer_id": dealer_id,
+            "dealer_name": dealer_name,
+            "form_type": "failed_tag",
+            "data": {
+                "service_order_no": request.POST.get("service_order_no"),
+                "warranty_type": request.POST.get("warranty_type"),
+                "model_no": request.POST.get("model_no"),
+                "chassis_no": request.POST.get("chassis_no"),
+                "part_description": request.POST.get("part_description"),
+                "part_serial_number": request.POST.get("part_serial_number"),
+            }
+        }
+
+        try:
+            requests.post(GOOGLE_SCRIPT_URL, json=payload, timeout=10)
+        except:
+            pass
+
         messages.success(request, "Failed Tag Part form saved successfully!")
         return redirect('failed_tag_form')
     return render(request, "portal/failed_tag_form.html")
 
+def failed_tag_list(request):
+    dealer_id = request.session.get('dealer_id')
+    if not dealer_id:
+        return redirect('dealer_login')
+    
+    dealer = Dealer.objects.get(dealer_id=dealer_id)
+
+    rows = FailedTagPart.objects.filter(dealer=dealer).order_by('-id')
+
+    return render(request, 'portal/failed_tag_list.html', {"rows": rows})
+
 def warranty_claim_form(request):
+    dealer_fk = None
+    dealer_id = request.session.get("dealer_id")
+    dealer_name = ""
+
+    if dealer_id:
+        try:
+            dealer_fk = Dealer.objects.get(dealer_id=dealer_id)
+            dealer_name = getattr(dealer_fk, "name", "")
+        except Dealer.DoesNotExist:
+            pass
+        
     if request.method == "POST":
         data = {
+            "dealer": dealer_fk,
+            "dealer_id_val": dealer_id,
+            "dealer_name_val": dealer_name,
             "component": request.POST.get("component"),
             "material_code": request.POST.get("material_code"),
             "reason_for_replacement": request.POST.get("reason_for_replacement"),
@@ -1188,12 +1251,56 @@ def warranty_claim_form(request):
             "dealer_signature": request.POST.get("dealer_signature"),
         }
         WarrantyClaim.objects.create(**data)
+        import requests
+
+        GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzmOuIfybIkcQM8UBfy2wNetXe15Ecdnvh9eJIJ9wVW4jxYRJs4Nrm_v3ib0EZTlEdsCg/exec"
+
+        payload = {
+            "dealer_id": dealer_id,
+            "dealer_name": dealer_name,
+            "form_type": "warranty_claim",
+            "data": {
+                "component": request.POST.get("component"),
+                "material_code": request.POST.get("material_code"),
+                "reason_for_replacement": request.POST.get("reason_for_replacement"),
+                "technical_details": request.POST.get("technical_details"),
+            }
+        }
+
+        try:
+            requests.post(GOOGLE_SCRIPT_URL, json=payload, timeout=10)
+        except:
+            pass
+
         messages.success(request, "Warranty Claim form saved successfully!")
         return redirect('warranty_claim_form')
 
     return render(request, "portal/warranty_claim_form.html")
 
+def warranty_claim_list(request):
+    dealer_id = request.session.get('dealer_id')
+    if not dealer_id:
+        return redirect('dealer_login')
+    
+    dealer = Dealer.objects.get(dealer_id=dealer_id)
+
+    rows = WarrantyClaim.objects.filter(dealer=dealer).order_by('-id')
+
+    return render(request, 'portal/warranty_claim_list.html', {"rows": rows})
+
+
 def warranty_pickup_form(request):
+    dealer_fk = None
+    dealer_id = request.session.get("dealer_id")
+    dealer_name = ""
+
+    if dealer_id:
+        try:
+            dealer_fk = Dealer.objects.get(dealer_id=dealer_id)
+            dealer_name = getattr(dealer_fk, "name", "")
+        except Dealer.DoesNotExist:
+            pass
+
     if request.method == "POST":
         materials = []
         for i in range(1, 11):
@@ -1210,6 +1317,9 @@ def warranty_pickup_form(request):
                 materials.append(row)
 
         WarrantyPartPickup.objects.create(
+            dealer=dealer_fk,
+            dealer_id_val=dealer_id,
+            dealer_name_val=dealer_name,
             collection_address=request.POST.get("collection_address"),
             delivery_address=request.POST.get("delivery_address"),
             contact_person=request.POST.get("contact_person"),
@@ -1219,10 +1329,48 @@ def warranty_pickup_form(request):
             approx_weight=request.POST.get("approx_weight"),
             material_details=json.dumps(materials)
         )
+        import requests
+
+        GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzmOuIfybIkcQM8UBfy2wNetXe15Ecdnvh9eJIJ9wVW4jxYRJs4Nrm_v3ib0EZTlEdsCg/exec"
+
+        payload = {
+            "dealer_id": dealer_id,
+            "dealer_name": dealer_name,
+            "form_type": "warranty_pickup",
+            "data": {
+                "collection_address": request.POST.get("collection_address"),
+                "delivery_address": request.POST.get("delivery_address"),
+                "contact_person": request.POST.get("contact_person"),
+                "mobile_no": request.POST.get("mobile_no"),
+            }
+        }
+
+        try:
+            requests.post(GOOGLE_SCRIPT_URL, json=payload, timeout=10)
+        except:
+            pass
+
         messages.success(request, "Warranty Part Pickup form saved successfully!")
         return redirect('warranty_pickup_form')
 
     return render(request, "portal/warranty_pickup_form.html")
+
+def warranty_pickup_list(request):
+    dealer_id = request.session.get('dealer_id')
+    if not dealer_id:
+        return redirect('dealer_login')
+    
+    dealer = Dealer.objects.get(dealer_id=dealer_id)
+
+    rows = WarrantyPartPickup.objects.filter(dealer=dealer).order_by('-id')
+
+    return render(request, 'portal/warranty_pickup_list.html', {"rows": rows})
+
+
+def failed_tag_pdf(request, pk):
+    item = FailedTagPart.objects.get(pk=pk)
+    pdf = render_to_pdf('portal/pdf/failed_tag_pdf.html', {"item": item})
+    return pdf
 
 def warranty_claim_pdf(request, pk):
     claim = WarrantyClaim.objects.get(pk=pk)

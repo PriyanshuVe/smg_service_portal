@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Failed Tag Part PDF</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 12px; }
+    h2 { text-align: center; margin-bottom: 20px; }
+    p { margin: 5px 0; }
+  </style>
+</head>
+<body>
+
+<h2>Failed Tag Part Report</h2>
+
+<p><b>Dealer ID:</b> {{ item.dealer_id_val }}</p>
+<p><b>Dealer Name:</b> {{ item.dealer_name_val }}</p>
+<p><b>Date:</b> {{ item.created_at|date:"d-m-Y" }}</p>
+
+<hr>
+
+<p><b>Service Order No:</b> {{ item.service_order_no }}</p>
+<p><b>Model No:</b> {{ item.model_no }}</p>
+<p><b>Chassis No:</b> {{ item.chassis_no }}</p>
+<p><b>ODO Reading:</b> {{ item.odo_reading }}</p>
+<p><b>Warranty Type:</b> {{ item.warranty_type }}</p>
+<p><b>Customer Sale Date:</b> {{ item.customer_sale_date }}</p>
+
+<hr>
+
+<p><b>Part Description:</b> {{ item.part_description }}</p>
+<p><b>Part Serial Number:</b> {{ item.part_serial_number }}</p>
+
+<hr>
+
+<p><b>Customer Complaint:</b><br> {{ item.customer_complaint }}</p>
+
+<p><b>Diagnostic Details:</b><br> {{ item.diagnostic_details }}</p>
+
+<p><b>Remarks:</b><br> {{ item.remarks }}</p>
+
+</body>
+</html>

@@ -66,5 +66,9 @@ urlpatterns = [
     path('warranty/claim/pdf/<int:pk>/', views.warranty_claim_pdf, name='warranty_claim_pdf'),
     path('warranty/pickup/pdf/<int:pk>/', views.warranty_pickup_pdf, name='warranty_pickup_pdf'),
     path('quotation/<int:quotation_id>/pdf/', views.quotation_pdf, name='quotation_pdf'),
+    path('failed-tag-pdf/<int:pk>/', views.failed_tag_pdf, name='failed_tag_pdf'),
+    path('failed-tags/', views.failed_tag_list, name='failed_tag_list'),
+    path('warranty-claims/', views.warranty_claim_list, name='warranty_claim_list'),
+    path('warranty-pickups/', views.warranty_pickup_list, name='warranty_pickup_list'),
 ]
 
